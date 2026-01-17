@@ -61,6 +61,7 @@ import org.peterbaldwin.vlcremote.fragment.PlayingFragment;
 import org.peterbaldwin.vlcremote.fragment.PlaylistFragment;
 import org.peterbaldwin.vlcremote.fragment.StatusFragment;
 import org.peterbaldwin.vlcremote.fragment.VolumeFragment;
+import org.peterbaldwin.vlcremote.fragment.WebViewFragment;
 import org.peterbaldwin.vlcremote.intent.Intents;
 import org.peterbaldwin.vlcremote.listener.BrowseDrawerListener;
 import org.peterbaldwin.vlcremote.listener.ButtonVisibilityListener;
@@ -101,8 +102,9 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     private static final String TAB_PLAYLIST = "playlist";
     private static final String TAB_BROWSE = "browse";
     private static final String TAB_NAVIGATION = "navigation";
-    
-    private static final int TAB_NAVIGATION_INDEX = 3;
+    private static final String TAB_REZKA = "rezka";
+
+    private static final int TAB_NAVIGATION_INDEX = 4;
 
     private static final int MAX_VOLUME = 1024;
 
@@ -195,6 +197,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
             setupTabHost();
             mPager.setOffscreenPageLimit(4);
             mPager.setAdapter(new ViewPagerAdapter(getSupportFragmentManager(), pref.isHideDVDTabSet()));
+
             mPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
                 @Override
                 public void onPageSelected(int position) {
@@ -229,6 +232,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         addTab(TAB_MEDIA, R.string.nowplaying_title, R.drawable.ic_tab_artists);
         addTab(TAB_PLAYLIST, R.string.tab_playlist, R.drawable.ic_tab_playlists);
         addTab(TAB_BROWSE, R.string.goto_start, R.drawable.ic_tab_playback);
+        addTab(TAB_REZKA, R.string.tab_rezka, R.drawable.ic_tab_albums);
         addTab(TAB_NAVIGATION, R.string.tab_dvd, R.drawable.ic_tab_albums);
         if(isHideDVDTab) {
             mTabHost.getTabWidget().removeView(mTabHost.getTabWidget().getChildTabViewAt(TAB_NAVIGATION_INDEX));
@@ -716,6 +720,20 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         }, delayMillis);
     }
 
+    @Override
+    public void onBackPressed() {
+        if (isCurrentTab(TAB_REZKA)) {
+            FragmentManager fm = getSupportFragmentManager();
+            String tag = "android:switcher:" + mPager.getId() + ":" + 4;
+            Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
+            if (f instanceof WebViewFragment) {
+                ((WebViewFragment) f).handleBackPressed();
+                return;
+            }
+        }
+        super.onBackPressed();
+    }
+
     private class StatusReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -753,14 +771,15 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
             switch(i) {
                 case 1: return new PlaylistFragment();
                 case 2: return new BrowseFragment();
-                case 3: return NavigationFragment.lockableInstance();
+                case 3: return new WebViewFragment();
+                case 4: return NavigationFragment.lockableInstance();
                 default: return new PlayingFragment();
             }
         }
 
         @Override
         public int getCount() {
-            return isHideDVDSet ? 3 : 4;
+            return isHideDVDSet ? 4 : 5;
         }
     }
     
