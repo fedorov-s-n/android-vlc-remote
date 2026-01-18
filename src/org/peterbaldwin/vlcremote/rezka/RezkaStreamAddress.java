@@ -2,6 +2,7 @@ package org.peterbaldwin.vlcremote.rezka;
 
 
 import android.util.Base64;
+import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,21 +44,26 @@ public class RezkaStreamAddress {
 
 
     public static List<RezkaStreamAddress> parse(String input) {
-        String decoded = decode(input);
-        String[] split = decoded.split(",");
         List<RezkaStreamAddress> streams = new ArrayList<>();
-        for(String stream: split) {
-            Matcher matcher = QUALITY_PATTERN.matcher(stream);
+        try{
+            String decoded = decode(input);
+            String[] split = decoded.split(",");
+            for(String stream: split) {
+                Matcher matcher = QUALITY_PATTERN.matcher(stream);
 
-            if(matcher.find()) {
-                String quality = matcher.group(1);
-                String[] urls = stream.substring(matcher.end()).split(" or ");
-                String url = urls[0];
-                for (String url1 : urls) {
-                    if (url1.endsWith(".mp4")) url = url1;
+                if(matcher.find()) {
+                    String quality = matcher.group(1);
+                    String[] urls = stream.substring(matcher.end()).split(" or ");
+                    String url = urls[0];
+                    for (String url1 : urls) {
+                        if (url1.endsWith(".mp4")) url = url1;
+                    }
+                    streams.add(new RezkaStreamAddress(quality, url));
                 }
-                streams.add(new RezkaStreamAddress(quality, url));
             }
+        }catch (RuntimeException ex) {
+            Log.e("VLC", "cannot parse address: " + input, ex);
+            return null;
         }
 
         return streams;

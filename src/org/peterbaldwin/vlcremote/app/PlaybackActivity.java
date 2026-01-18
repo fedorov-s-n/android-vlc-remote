@@ -723,8 +723,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     @Override
     public void onBackPressed() {
         if (isCurrentTab(TAB_REZKA)) {
-            FragmentManager fm = getSupportFragmentManager();
-            String tag = "android:switcher:" + mPager.getId() + ":" + 4;
+            String tag = "android:switcher:" + mPager.getId() + ":" + 3;
             Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
             if (f instanceof WebViewFragment) {
                 ((WebViewFragment) f).handleBackPressed();

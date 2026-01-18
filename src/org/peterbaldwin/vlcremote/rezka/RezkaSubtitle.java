@@ -1,5 +1,7 @@
 package org.peterbaldwin.vlcremote.rezka;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -21,19 +23,37 @@ public class RezkaSubtitle {
     }
 
     public static List<RezkaSubtitle> parse(String subtitles) {
-        String[] split = subtitles.split(",");
         List<RezkaSubtitle> result = new ArrayList<>();
-        for(String subtitle: split) {
-            Matcher matcher = QUALITY_PATTERN.matcher(subtitle);
+        try{
+            String[] split = subtitles.split(",");
+            for(String subtitle: split) {
+                Matcher matcher = QUALITY_PATTERN.matcher(subtitle);
 
-            if(matcher.find()) {
-                String label = matcher.group(1);
-                String link = subtitle.substring(matcher.end());
+                if(matcher.find()) {
+                    String label = matcher.group(1);
+                    String link = subtitle.substring(matcher.end());
 
-                result.add(new RezkaSubtitle(label, link));
+                    result.add(new RezkaSubtitle(label, link));
+                }
             }
+        }catch (RuntimeException ex) {
+            Log.e("VLC", "cannot parse subtitles: " + subtitles, ex);
+            return null;
         }
 
         return result;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    @Override
+    public String toString() {
+        return link;
     }
 }

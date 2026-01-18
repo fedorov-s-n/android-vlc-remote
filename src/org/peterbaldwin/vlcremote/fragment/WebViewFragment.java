@@ -1,7 +1,14 @@
 package org.peterbaldwin.vlcremote.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,14 +22,25 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import org.peterbaldwin.client.android.vlcremote.R;
+import org.peterbaldwin.vlcremote.intent.Intents;
+import org.peterbaldwin.vlcremote.model.Preferences;
+import org.peterbaldwin.vlcremote.model.Status;
+import org.peterbaldwin.vlcremote.model.Track;
+import org.peterbaldwin.vlcremote.net.MediaServer;
 import org.peterbaldwin.vlcremote.rezka.RezkaStreamAddress;
+import org.peterbaldwin.vlcremote.rezka.RezkaSubtitle;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class WebViewFragment extends Fragment {
-
+    private BroadcastReceiver mStatusReceiver;
     private WebView webView;
+    private List<WaitingSubtitles> swl = new CopyOnWriteArrayList<>();
 
     public WebViewFragment() {
     }
@@ -42,13 +60,12 @@ public class WebViewFragment extends Fragment {
 
         webView = (WebView) view.findViewById(R.id.webView);
 
-        // чтобы ссылки открывались внутри WebView, а не в браузере
         webView.setWebViewClient(new WebViewClient());
 
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
-        s.setUseWideViewPort(true);        // учитывать meta viewport
-        s.setLoadWithOverviewMode(true);   // подгонять под экран
+        s.setUseWideViewPort(true);
+        s.setLoadWithOverviewMode(true);
         s.setSupportZoom(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
@@ -66,8 +83,12 @@ public class WebViewFragment extends Fragment {
                     webView.evaluateJavascript("CDNPlayerInfo.streams", new ValueCallback<String>() {
                         @Override
                         public void onReceiveValue(String value) {
-                            String input = value.trim().substring(1, value.length() - 2);
+                            String input = value !=null && value.length() > 2 ? value.trim().substring(1, value.length() - 1) : null;
                             List<RezkaStreamAddress> streams = RezkaStreamAddress.parse(input);
+                            if(streams == null) {
+                                Toast.makeText(getActivity(), "Cannot receive streams from that response: " + input, Toast.LENGTH_LONG).show();
+                                return;
+                            }
 
                             PopupMenu menu = new PopupMenu(v.getContext(), v);
 
@@ -81,7 +102,46 @@ public class WebViewFragment extends Fragment {
                                 @Override
                                 public boolean onMenuItemClick(MenuItem item) {
                                     RezkaStreamAddress stream = streams.get(item.getItemId());
-                                    Toast.makeText(getActivity(), "Selected: " + stream.getQuality(), Toast.LENGTH_SHORT).show();
+
+                                    Context context = getActivity();
+                                    Preferences preferences = Preferences.get(context);
+                                    String authority = preferences.getAuthority();
+                                    if (authority != null) {
+                                        MediaServer server = new MediaServer(context, authority);
+                                        server.status().command.input.play(stream.getMp4(), ":sub-file="+ Uri.encode("https://static.voidboost.com/view/pMJqlfJJpRvwjcXzPkif7A/1768766872/1/0/1/2/2/9/0/idwxsn6f7894.vtt"));
+
+                                        webView.evaluateJavascript("CDNPlayerInfo.subtitle", new ValueCallback<String>() {
+                                            @Override
+                                            public void onReceiveValue(String value) {
+                                                String input = value !=null && value.length() > 2 ? value.trim().substring(1, value.length() - 1) : null;
+
+                                                List<RezkaSubtitle> subtitles = RezkaSubtitle.parse(input);
+                                                // Log.e("VLC", "got input: " + value+ ", parsed subtitles: " + subtitles);
+
+                                                if(subtitles ==null) {
+                                                    Toast.makeText(getActivity(), "Cannot receive subtitles from that response: " + input, Toast.LENGTH_LONG).show();
+                                                }else{
+                                                    view.postDelayed(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            int selectedSubtitleIndex = -1;
+                                                            for(int i=0;i<subtitles.size();++i) {
+                                                                if(selectedSubtitleIndex == -1 && subtitles.get(i).getLabel().equalsIgnoreCase("english")){
+                                                                    selectedSubtitleIndex = i;
+                                                                }else{
+                                                                    server.status().command.input.subtitles(subtitles.get(i).getLink());
+                                                                }
+                                                            }
+                                                            if(selectedSubtitleIndex != -1) {
+                                                                server.status().command.input.subtitles(subtitles.get(selectedSubtitleIndex).getLink());
+                                                            }
+                                                        }
+                                                    }, 5000);
+                                                }
+                                            }
+                                        });
+                                    }
+
                                     return true;
                                 }
                             });
@@ -113,5 +173,59 @@ public class WebViewFragment extends Fragment {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mStatusReceiver = new StatusReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intents.ACTION_STATUS);
+        getActivity().registerReceiver(mStatusReceiver, filter);
+    }
+
+    void onTrackChanged(Track track) {
+//        Toast.makeText(getActivity(), "Track url: " + track.getTrack(), Toast.LENGTH_SHORT).show();
+//        List<WaitingSubtitles> toRemove = new ArrayList<>(1);
+//        for (WaitingSubtitles ws: swl) {
+//            if(Objects.equals(track.getUrl(), ws.stream.getMp4())) {
+//                toRemove.add(ws);
+//            }
+//        }
+//        if (!toRemove.isEmpty()) {
+//            Context context = getActivity();
+//            Preferences preferences = Preferences.get(context);
+//            String authority = preferences.getAuthority();
+//            if (authority != null) {
+//                MediaServer server = new MediaServer(context, authority);
+//                for(WaitingSubtitles ws: toRemove) {
+//                    server.status().command.input.play();
+//                }
+//                swl.removeAll(toRemove);
+//            }
+//        }
+    }
+
+    private class StatusReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Intents.ACTION_STATUS.equals(action)) {
+                Status status = (Status) intent.getSerializableExtra(Intents.EXTRA_STATUS);
+                onTrackChanged(status.getTrack());
+            }
+        }
+    }
+
+    private static class WaitingSubtitles {
+        private final RezkaStreamAddress stream;
+        private final List<RezkaSubtitle> subtitle;
+        private final long startTime;
+
+        private WaitingSubtitles(RezkaStreamAddress stream, List<RezkaSubtitle> subtitle, long startTime) {
+            this.stream = stream;
+            this.subtitle = subtitle;
+            this.startTime = startTime;
+        }
     }
 }

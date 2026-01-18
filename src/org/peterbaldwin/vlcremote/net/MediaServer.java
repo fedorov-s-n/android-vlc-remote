@@ -282,6 +282,13 @@ public final class MediaServer {
                     execute(query);
                 }
 
+
+                public void subtitles(String input) {
+                    String query = "command=addsubtitle&val=" + Uri.encode(input);
+                    // Log.e("VLC", "subtitles command: " + query);
+                    execute(query);
+                }
+
                 public void enqueue(String input) {
                     execute("command=in_enqueue&input=" + Uri.encode(input));
                 }
