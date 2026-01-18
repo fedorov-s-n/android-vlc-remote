@@ -108,7 +108,7 @@ public class WebViewFragment extends Fragment {
                                     String authority = preferences.getAuthority();
                                     if (authority != null) {
                                         MediaServer server = new MediaServer(context, authority);
-                                        server.status().command.input.play(stream.getMp4(), ":sub-file="+ Uri.encode("https://static.voidboost.com/view/pMJqlfJJpRvwjcXzPkif7A/1768766872/1/0/1/2/2/9/0/idwxsn6f7894.vtt"));
+                                        server.status().command.input.play(stream.getMp4());
 
                                         webView.evaluateJavascript("CDNPlayerInfo.subtitle", new ValueCallback<String>() {
                                             @Override
