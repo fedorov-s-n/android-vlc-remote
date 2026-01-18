@@ -24,9 +24,11 @@ import android.widget.Toast;
 import org.peterbaldwin.client.android.vlcremote.R;
 import org.peterbaldwin.vlcremote.intent.Intents;
 import org.peterbaldwin.vlcremote.model.Preferences;
+import org.peterbaldwin.vlcremote.model.Server;
 import org.peterbaldwin.vlcremote.model.Status;
 import org.peterbaldwin.vlcremote.model.Track;
 import org.peterbaldwin.vlcremote.net.MediaServer;
+import org.peterbaldwin.vlcremote.rezka.DownloadPathClient;
 import org.peterbaldwin.vlcremote.rezka.RezkaStreamAddress;
 import org.peterbaldwin.vlcremote.rezka.RezkaSubtitle;
 
@@ -36,6 +38,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WebViewFragment extends Fragment {
     private BroadcastReceiver mStatusReceiver;
@@ -114,29 +117,28 @@ public class WebViewFragment extends Fragment {
                                             @Override
                                             public void onReceiveValue(String value) {
                                                 String input = value !=null && value.length() > 2 ? value.trim().substring(1, value.length() - 1) : null;
-
                                                 List<RezkaSubtitle> subtitles = RezkaSubtitle.parse(input);
-                                                // Log.e("VLC", "got input: " + value+ ", parsed subtitles: " + subtitles);
+
+                                                String serverHost = Server.fromKey(authority).getHost();
+                                                int port = 3900; // so far hard coded
 
                                                 if(subtitles ==null) {
                                                     Toast.makeText(getActivity(), "Cannot receive subtitles from that response: " + input, Toast.LENGTH_LONG).show();
-                                                }else{
-                                                    view.postDelayed(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            int selectedSubtitleIndex = -1;
-                                                            for(int i=0;i<subtitles.size();++i) {
-                                                                if(selectedSubtitleIndex == -1 && subtitles.get(i).getLabel().equalsIgnoreCase("english")){
-                                                                    selectedSubtitleIndex = i;
-                                                                }else{
-                                                                    server.status().command.input.subtitles(subtitles.get(i).getLink());
-                                                                }
-                                                            }
-                                                            if(selectedSubtitleIndex != -1) {
-                                                                server.status().command.input.subtitles(subtitles.get(selectedSubtitleIndex).getLink());
-                                                            }
-                                                        }
-                                                    }, 5000);
+                                                }else if (!subtitles.isEmpty()){
+                                                    for (RezkaSubtitle rs: subtitles) {
+                                                        String name = rs.getLabel()+"."+rs.getExtension();
+                                                        DownloadPathClient.requestTempPath(serverHost, port, rs.getLink(), name, new DownloadPathClient.Callback() {
+                                                            @Override
+                                                            public void onSuccess(String tempPath) {
+                                                                server.status().command.input.subtitles(tempPath);
+                                                              }
+
+                                                            @Override
+                                                            public void onError(Exception e, String serverBody) {
+                                                                Log.e("VLC", "Error: " + e + " body=" + serverBody);
+                                                              }
+                                                        });
+                                                    }
                                                 }
                                             }
                                         });

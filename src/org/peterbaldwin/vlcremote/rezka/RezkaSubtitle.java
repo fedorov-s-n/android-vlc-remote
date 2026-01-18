@@ -56,4 +56,10 @@ public class RezkaSubtitle {
     public String toString() {
         return link;
     }
+
+    public String getExtension() {
+        int dot = link.lastIndexOf('.');
+        if (dot <= 0 || dot == link.length() - 1 || link.length() - dot > 10) return ".tmp";
+        return link.substring(dot + 1).toLowerCase();
+    }
 }
