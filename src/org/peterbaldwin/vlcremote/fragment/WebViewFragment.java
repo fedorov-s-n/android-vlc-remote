@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import org.peterbaldwin.client.android.vlcremote.R;
 import org.peterbaldwin.vlcremote.intent.Intents;
+import org.peterbaldwin.vlcremote.model.Hotkeys;
 import org.peterbaldwin.vlcremote.model.Preferences;
 import org.peterbaldwin.vlcremote.model.Server;
 import org.peterbaldwin.vlcremote.model.Status;
@@ -124,13 +125,31 @@ public class WebViewFragment extends Fragment {
 
                                                 if(subtitles ==null) {
                                                     Toast.makeText(getActivity(), "Cannot receive subtitles from that response: " + input, Toast.LENGTH_LONG).show();
-                                                }else if (!subtitles.isEmpty()){
+                                                }else {
                                                     for (RezkaSubtitle rs: subtitles) {
+                                                        if(rs.getLabel().equalsIgnoreCase("english")) {
+                                                            subtitles.remove(rs);
+                                                            subtitles.add(0, rs);
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    int index = 0;
+                                                    for (RezkaSubtitle rs: subtitles) {
+                                                        int localIndex = index;
                                                         String name = rs.getLabel()+"."+rs.getExtension();
                                                         DownloadPathClient.requestTempPath(serverHost, port, rs.getLink(), name, new DownloadPathClient.Callback() {
                                                             @Override
                                                             public void onSuccess(String tempPath) {
                                                                 server.status().command.input.subtitles(tempPath);
+                                                                if(localIndex == 0) {
+                                                                    view.postDelayed(new Runnable() {
+                                                                        @Override
+                                                                        public void run() {
+                                                                            server.status().command.key(Hotkeys.SUBTITLE_TRACK);
+                                                                        }
+                                                                    }, 5000);
+                                                                }
                                                               }
 
                                                             @Override
@@ -138,6 +157,7 @@ public class WebViewFragment extends Fragment {
                                                                 Log.e("VLC", "Error: " + e + " body=" + serverBody);
                                                               }
                                                         });
+                                                        index++;
                                                     }
                                                 }
                                             }

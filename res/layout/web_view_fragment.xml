@@ -14,6 +14,9 @@
         android:layout_height="wrap_content"
         android:text="@string/web_view_watch"
         android:layout_gravity="bottom|start"
-        android:layout_margin="12dp" />
+        android:layout_margin="12dp"
+        android:alpha="1"
+        android:background="@drawable/btw_watch"
+        />
 
 </FrameLayout>
