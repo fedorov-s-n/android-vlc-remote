@@ -1,0 +1,64 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace 'com.example.vlcclient'
+    namespace "org.peterbaldwin.client.android.vlcremote"
+    compileSdk {
+        version = release(34)
+    }
+
+    defaultConfig {
+        applicationId "org.peterbaldwin.client.android.vlcremote"
+        minSdk 16
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packaging {
+        resources {
+            excludes += [
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt"
+            ]
+        }
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+
+    //noinspection UseTomlInstead,NewerVersionAvailable
+    implementation "org.apache.httpcomponents:httpclient:4.5.9"
+    //noinspection UseTomlInstead,NewerVersionAvailable
+    implementation "org.apache.httpcomponents:httpcore:4.4.11"
+
+    implementation "androidx.multidex:multidex:2.0.1"
+    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+    implementation "androidx.viewpager:viewpager:1.0.0"
+    implementation "androidx.loader:loader:1.1.0"
+}
