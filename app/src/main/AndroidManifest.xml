@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:versionCode="66"
     android:versionName="0.7.5">
 
@@ -29,6 +30,7 @@
         android:hardwareAccelerated="true"
         android:icon="@drawable/icon"
         android:label="@string/app_name_market"
+        tools:replace="android:label"
         android:logo="@drawable/icon"
         android:theme="@style/Theme"
         android:allowBackup="true"
@@ -338,6 +340,18 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
+
+
+        <receiver
+            android:name="com.falcofemoralis.hdrezkaapp.broadcasts.NotificationListener"
+            android:enabled="true" />
+
+
+        <activity
+            android:name="com.falcofemoralis.hdrezkaapp.views.tv.player.PlayerActivity"
+            android:exported="false"
+            android:theme="@style/ATVTheme" />
+
     </application>
 
 </manifest>

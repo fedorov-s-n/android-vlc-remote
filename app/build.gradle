@@ -1,23 +1,27 @@
 plugins {
     id "com.android.application"
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace 'com.example.vlcclient'
     namespace "org.peterbaldwin.client.android.vlcremote"
     compileSdk {
-        version = release(34)
+        version = release(36)
     }
 
     defaultConfig {
         applicationId "org.peterbaldwin.client.android.vlcremote"
-        minSdk 16
+        minSdk 21
         targetSdk 34
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
@@ -42,17 +46,21 @@ android {
             ]
         }
     }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
 }
 
 dependencies {
     implementation libs.appcompat
     implementation libs.material
+    implementation libs.core.ktx
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
 
-    //noinspection UseTomlInstead,NewerVersionAvailable
+    //noinspection DuplicatePlatformClasses,UseTomlInstead,NewerVersionAvailable
     implementation "org.apache.httpcomponents:httpclient:4.5.9"
     //noinspection UseTomlInstead,NewerVersionAvailable
     implementation "org.apache.httpcomponents:httpcore:4.4.11"
@@ -61,4 +69,58 @@ dependencies {
     implementation "androidx.legacy:legacy-support-v4:1.0.0"
     implementation "androidx.viewpager:viewpager:1.0.0"
     implementation "androidx.loader:loader:1.1.0"
+
+    // --- Dependencies required by the merged hdrezka module ---
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "androidx.recyclerview:recyclerview:1.3.2"
+    implementation "androidx.fragment:fragment-ktx:1.6.2"
+    implementation "androidx.viewpager2:viewpager2:1.0.0"
+    implementation "androidx.preference:preference-ktx:1.2.1"
+    implementation "androidx.leanback:leanback:1.0.0"
+    implementation "androidx.leanback:leanback-preference:1.0.0"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.3.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1"
+
+    // Coroutines
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
+
+    // HTML parsing
+    implementation "org.jsoup:jsoup:1.13.1"
+
+    // Image loading
+    implementation "com.squareup.picasso:picasso:2.8"
+    implementation "com.github.bumptech.glide:glide:4.14.2"
+    implementation "jp.wasabeef:glide-transformations:4.3.0"
+
+    // Video playback
+    implementation "com.google.android.exoplayer:exoplayer:2.15.1"
+    implementation "com.google.android.exoplayer:extension-leanback:2.15.1"
+
+    // JSON
+    implementation "com.google.code.gson:gson:2.10.1"
+    implementation "com.google.guava:guava:31.1-android"
+
+    // Voice search
+    implementation "com.algolia.instantsearch:voice:1.1.0"
+
+    // UI widgets
+    implementation "com.github.chivorns:smartmaterialspinner:1.5.0"
+    implementation "com.github.ome450901:SimpleRatingBar:1.5.1"
+    implementation "io.github.nikartm:image-support:2.0.0"
+    // ExpandableLayout (AAkira, deprecated & unpublished) vendored under com.github.aakira.expandablelayout
+    implementation "de.hdodenhof:circleimageview:3.1.0"
+    implementation "com.jsibbold:zoomage:1.3.1"
+
+    // Scalable size units used by hdrezka layouts (@dimen/_Nssp, @dimen/_Nsdp)
+    implementation "com.intuit.ssp:ssp-android:1.1.0"
+    implementation "com.intuit.sdp:sdp-android:1.1.0"
+
+    // Utils
+    implementation "com.jakewharton:process-phoenix:2.1.2"
+
+    // Firebase (crash reporting) - libraries only, google-services plugin not applied
+    implementation platform("com.google.firebase:firebase-bom:32.7.0")
+    implementation "com.google.firebase:firebase-crashlytics-ktx"
+    implementation "com.google.firebase:firebase-analytics-ktx"
 }
