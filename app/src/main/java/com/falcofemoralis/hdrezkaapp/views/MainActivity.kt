@@ -33,6 +33,7 @@ import com.falcofemoralis.hdrezkaapp.constants.NavigationMenuTabs
 import com.falcofemoralis.hdrezkaapp.constants.UpdateItem
 import com.falcofemoralis.hdrezkaapp.controllers.DownloadController
 import com.falcofemoralis.hdrezkaapp.controllers.SocketFactory
+import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection
 import com.falcofemoralis.hdrezkaapp.interfaces.IPagerView
 import com.falcofemoralis.hdrezkaapp.interfaces.NavigationMenuCallback
@@ -65,7 +66,7 @@ import javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory
 import kotlin.system.exitProcess
 
 
-class MainActivity : AppCompatActivity(), OnFragmentInteractionListener, IConnection, IPagerView, NavigationStateListener, FragmentChangeListener,
+class MainActivity : AppCompatActivity(), HdrezkaHost, IConnection, NavigationStateListener, FragmentChangeListener,
     NavigationMenuCallback, VoiceSpeechRecognizer.ResultsListener {
     private var isSettingsOpened: Boolean = false
     private var isSeriesUpdatesOpened: Boolean = false
@@ -197,7 +198,7 @@ class MainActivity : AppCompatActivity(), OnFragmentInteractionListener, IConnec
         Highlighter.highlightLayout(tvBtn, findViewById(R.id.tv_text_header), findViewById(R.id.tv_image), this)
     }
 
-    fun refreshActivity() {
+    override fun refreshActivity() {
         ProcessPhoenix.triggerRebirth(this)
     }
 
@@ -262,7 +263,7 @@ class MainActivity : AppCompatActivity(), OnFragmentInteractionListener, IConnec
         }
     }
 
-    fun showProviderEnter() {
+    override fun showProviderEnter() {
         val builder = DialogManager.getDialog(this, R.string.provider_enter_title)
         val dialogView = layoutInflater.inflate(R.layout.dialog_provider_enter, null)
         val spinner = dialogView.findViewById<SmartMaterialSpinner<String>>(R.id.dialog_provider_protocol)
@@ -322,7 +323,7 @@ class MainActivity : AppCompatActivity(), OnFragmentInteractionListener, IConnec
         }
     }
 
-    fun setUserAvatar() {
+    override fun setUserAvatar() {
         if (SettingsData.deviceType != DeviceType.TV) {
             val imageView: ImageView = findViewById(R.id.activity_main_iv_user)
             if (UserData.avatarLink != null && UserData.avatarLink!!.isNotEmpty()) {
@@ -674,12 +675,12 @@ class MainActivity : AppCompatActivity(), OnFragmentInteractionListener, IConnec
         // return result.toString(StandardCharsets.UTF_8);
     }
 
-    fun initSeriesUpdates() {
+    override fun initSeriesUpdates() {
         seriesUpdatesFragment = SeriesUpdatesFragment()
         seriesUpdatesFragment?.initUserUpdatesData(this, ::updateNotifyBadge, ::createNotifyBtn)
     }
 
-    fun updateNotifyBadge(badgeCount: Int) {
+    override fun updateNotifyBadge(badgeCount: Int) {
         val notifyBtn = if (SettingsData.deviceType == DeviceType.TV) {
             NavigationMenu.notifyBtn
         } else {

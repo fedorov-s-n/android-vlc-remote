@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@style/AppTheme"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/fragment_actor_films_ll_main"
     android:layout_width="match_parent"

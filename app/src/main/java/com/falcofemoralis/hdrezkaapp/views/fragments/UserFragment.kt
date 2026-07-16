@@ -1,5 +1,6 @@
 package com.falcofemoralis.hdrezkaapp.views.fragments
 
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -33,7 +34,7 @@ class UserFragment : Fragment(), UserView {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        fragmentListener = context as OnFragmentInteractionListener
+        fragmentListener = hdrezkaHost()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -146,7 +147,7 @@ class UserFragment : Fragment(), UserView {
     }
 
     override fun setUserAvatar() {
-        (requireActivity() as MainActivity).setUserAvatar()
+        hdrezkaHost().setUserAvatar()
     }
 
     override fun completeAuth() {
@@ -155,13 +156,13 @@ class UserFragment : Fragment(), UserView {
         initAuthPanel(true)
 
         activity?.let {
-            (it as MainActivity).updatePager()
+            hdrezkaHost().updatePager()
         }
     }
 
     override fun updateNotifyBtn() {
         activity?.let {
-            (it as MainActivity).initSeriesUpdates()
+            hdrezkaHost().initSeriesUpdates()
         }
     }
 
@@ -173,7 +174,7 @@ class UserFragment : Fragment(), UserView {
                 userPresenter.exit()
 
                 activity?.let { it1 ->
-                    (it1 as MainActivity).updatePager()
+                    hdrezkaHost().updatePager()
                 }
             }
             builder.setNegativeButton(getString(R.string.cancel)) { dialog, id ->

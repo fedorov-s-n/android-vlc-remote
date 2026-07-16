@@ -8,7 +8,7 @@ import org.peterbaldwin.client.android.vlcremote.R
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection.ErrorType
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
-import com.falcofemoralis.hdrezkaapp.views.MainActivity
+import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.ktx.Firebase
@@ -77,7 +77,7 @@ object ExceptionHelper {
                 }
                 builder.setOnCancelListener {
                     activeDialog = null
-                    (context as MainActivity).showProviderEnter()
+                    (context as? HdrezkaHost)?.showProviderEnter()
                 }
                 builder.setCancelable(false)
 
@@ -102,7 +102,13 @@ object ExceptionHelper {
                     e !is SSLException &&
             e !is IOException
         ) {
-            Firebase.crashlytics.recordException(e)
+            try {
+                // Firebase is not wired up yet (no google-services.json); guard so a
+                // missing default app never crashes the host.
+                Firebase.crashlytics.recordException(e)
+            } catch (fe: Exception) {
+                fe.printStackTrace()
+            }
         }
 
         e.printStackTrace()

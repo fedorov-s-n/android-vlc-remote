@@ -1,5 +1,6 @@
 package com.falcofemoralis.hdrezkaapp.views.fragments
 
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -34,7 +35,7 @@ open class FilmsListFragment : Fragment(), FilmsListView {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        fragmentListener = context as OnFragmentInteractionListener
+        fragmentListener = hdrezkaHost()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

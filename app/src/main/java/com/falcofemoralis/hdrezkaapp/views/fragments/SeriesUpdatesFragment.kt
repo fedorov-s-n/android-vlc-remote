@@ -1,5 +1,6 @@
 package com.falcofemoralis.hdrezkaapp.views.fragments
 
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -47,7 +48,7 @@ class SeriesUpdatesFragment : Fragment(), SeriesUpdatesView {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        fragmentListener = context as OnFragmentInteractionListener
+        fragmentListener = hdrezkaHost()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -130,7 +131,7 @@ class SeriesUpdatesFragment : Fragment(), SeriesUpdatesView {
 
     override fun resetBadge(){
         activity?.let {
-            (it as MainActivity).updateNotifyBadge(0)
+            hdrezkaHost().updateNotifyBadge(0)
         }
     }
 

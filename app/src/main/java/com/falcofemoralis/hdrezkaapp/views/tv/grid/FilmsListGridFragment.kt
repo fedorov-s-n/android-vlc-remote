@@ -13,6 +13,7 @@
  */
 package com.falcofemoralis.hdrezkaapp.views.tv.grid
 
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -39,7 +40,7 @@ class FilmsListGridFragment : VerticalGridSupportFragment(), OnItemViewSelectedL
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        fragmentListener = context as OnFragmentInteractionListener
+        fragmentListener = hdrezkaHost()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

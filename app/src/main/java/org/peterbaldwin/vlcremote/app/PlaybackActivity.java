@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.falcofemoralis.hdrezkaapp.views.RezkaFragment;
 import org.peterbaldwin.client.android.vlcremote.R;
 import org.peterbaldwin.vlcremote.compat.Util;
 import org.peterbaldwin.vlcremote.fragment.ArtFragment;
@@ -106,8 +107,10 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     private static final String TAB_BROWSE = "browse";
     private static final String TAB_NAVIGATION = "navigation";
     private static final String TAB_REZKA = "rezka";
+    private static final String TAB_HDREZKA = "hdrezka";
 
-    private static final int TAB_NAVIGATION_INDEX = 4;
+    private static final int TAB_HDREZKA_INDEX = 4;
+    private static final int TAB_NAVIGATION_INDEX = 5;
 
     private static final int MAX_VOLUME = 1024;
 
@@ -236,6 +239,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         addTab(TAB_PLAYLIST, R.string.tab_playlist, R.drawable.ic_tab_playlists);
         addTab(TAB_BROWSE, R.string.goto_start, R.drawable.ic_tab_playback);
         addTab(TAB_REZKA, R.string.tab_rezka, R.drawable.ic_tab_albums);
+        addTab(TAB_HDREZKA, R.string.tab_hdrezka, R.drawable.ic_baseline_local_movies_24);
         addTab(TAB_NAVIGATION, R.string.tab_dvd, R.drawable.ic_tab_albums);
         if(isHideDVDTab) {
             mTabHost.getTabWidget().removeView(mTabHost.getTabWidget().getChildTabViewAt(TAB_NAVIGATION_INDEX));
@@ -733,6 +737,13 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
                 return;
             }
         }
+        if (isCurrentTab(TAB_HDREZKA)) {
+            String tag = "android:switcher:" + mPager.getId() + ":" + TAB_HDREZKA_INDEX;
+            Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
+            if (f instanceof RezkaFragment && ((RezkaFragment) f).handleBackPressed()) {
+                return;
+            }
+        }
         super.onBackPressed();
     }
 
@@ -774,14 +785,15 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
                 case 1: return new PlaylistFragment();
                 case 2: return new BrowseFragment();
                 case 3: return new WebViewFragment();
-                case 4: return NavigationFragment.lockableInstance();
+                case 4: return new RezkaFragment();
+                case 5: return NavigationFragment.lockableInstance();
                 default: return new PlayingFragment();
             }
         }
 
         @Override
         public int getCount() {
-            return isHideDVDSet ? 4 : 5;
+            return isHideDVDSet ? 5 : 6;
         }
     }
     

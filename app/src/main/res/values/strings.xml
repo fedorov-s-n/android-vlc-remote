@@ -176,6 +176,7 @@
 
     <!-- Label for rezka.ag navigation tab -->
     <string name="tab_rezka">rezka.ag</string>
+    <string name="tab_hdrezka">HDrezka</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

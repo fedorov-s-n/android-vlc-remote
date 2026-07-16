@@ -1,5 +1,6 @@
 package com.falcofemoralis.hdrezkaapp.views.fragments
 
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
@@ -147,7 +148,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
                 userPresenter?.exit()
 
                 mActivity?.let { it1 ->
-                    (it1 as MainActivity).updatePager()
+                    hdrezkaHost().updatePager()
                 }
             }
             builder.setNegativeButton(getString(R.string.cancel)) { dialog, id ->
@@ -253,7 +254,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
     }
 
     override fun setUserAvatar() {
-        (mActivity as MainActivity).setUserAvatar()
+        hdrezkaHost().setUserAvatar()
     }
 
     override fun completeAuth() {
@@ -262,13 +263,13 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
         initAuthPanel(true)
 
         mActivity?.let {
-            (it as MainActivity).updatePager()
+            hdrezkaHost().updatePager()
         }
     }
 
     override fun updateNotifyBtn() {
         activity?.let {
-            (it as MainActivity).initSeriesUpdates()
+            hdrezkaHost().initSeriesUpdates()
         }
     }
 
@@ -385,12 +386,12 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
 
     private fun applyProvider() {
         mContext?.let { UserData.reset(it) }
-        mActivity?.let { (it as MainActivity).updatePager() }
-        mActivity?.let { (it as MainActivity).setUserAvatar() }
+        mActivity?.let { hdrezkaHost().updatePager() }
+        mActivity?.let { hdrezkaHost().setUserAvatar() }
     }
 
     private fun applyInterfaceChange() {
-        mActivity?.let { (it as MainActivity).updatePager() }
+        mActivity?.let { hdrezkaHost().updatePager() }
     }
 
     private fun changeUiMode(deviceType: DeviceType) {
@@ -398,7 +399,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedP
             SettingsData.setUIMode(deviceType, it)
         }
         mActivity?.let {
-            (it as MainActivity).refreshActivity()
+            hdrezkaHost().refreshActivity()
         }
     }
 }

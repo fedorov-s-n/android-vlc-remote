@@ -12,7 +12,7 @@
         android:layout_height="50dp">
 
         <ru.nikartm.support.ImageBadgeView
-            android:id="@+id/activity_main_iv_notify_btn"
+            android:id="@+id/rezka_iv_notify_btn"
             android:layout_width="40dp"
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
@@ -23,7 +23,7 @@
             app:ibv_badgeTextColor="@color/white"
             app:ibv_badgeTextSize="@dimen/small_text"
             app:ibv_badgeTextStyle="bold"
-            app:ibv_badgeValue="10"
+            app:ibv_badgeValue="0"
             app:ibv_fixedBadgeRadius="10dp"
             app:ibv_maxBadgeValue="99"
             app:ibv_roundBadge="true"
@@ -40,7 +40,7 @@
             android:textStyle="bold" />
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/activity_main_iv_user"
+            android:id="@+id/rezka_iv_user"
             android:layout_width="40dp"
             android:layout_height="match_parent"
             android:layout_alignParentEnd="true"
@@ -51,7 +51,7 @@
     </RelativeLayout>
 
     <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/activity_main_fcv_container"
+        android:id="@+id/rezka_fcv_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

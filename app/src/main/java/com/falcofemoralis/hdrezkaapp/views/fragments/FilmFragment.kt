@@ -1,5 +1,7 @@
 package com.falcofemoralis.hdrezkaapp.views.fragments
 
+import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
+import com.falcofemoralis.hdrezkaapp.interfaces.hdrezkaHost
 import android.Manifest
 import android.animation.Animator
 import android.annotation.SuppressLint
@@ -85,7 +87,7 @@ class FilmFragment : Fragment(), FilmView {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        fragmentListener = context as OnFragmentInteractionListener
+        fragmentListener = hdrezkaHost()
     }
 
     override fun onDestroy() {
@@ -345,7 +347,7 @@ class FilmFragment : Fragment(), FilmView {
     class WebAppInterface(private val act: FragmentActivity) {
         @JavascriptInterface
         fun updateWatchLater() {
-            (act as MainActivity).redrawPage(UpdateItem.WATCH_LATER_CHANGED)
+            (act as? HdrezkaHost)?.redrawPage(UpdateItem.WATCH_LATER_CHANGED)
         }
     }
 
@@ -695,19 +697,19 @@ class FilmFragment : Fragment(), FilmView {
 
     override fun updateBookmarksPager() {
         requireActivity().let {
-            (it as MainActivity).redrawPage(UpdateItem.BOOKMARKS_CHANGED)
+            hdrezkaHost().redrawPage(UpdateItem.BOOKMARKS_CHANGED)
         }
     }
 
     override fun updateBookmarksFilmsPager() {
         requireActivity().let {
-            (it as MainActivity).redrawPage(UpdateItem.BOOKMARKS_FILMS_CHANGED)
+            hdrezkaHost().redrawPage(UpdateItem.BOOKMARKS_FILMS_CHANGED)
         }
     }
 
     override fun updateWatchPager() {
         requireActivity().let {
-            (it as MainActivity).redrawPage(UpdateItem.WATCH_LATER_CHANGED)
+            hdrezkaHost().redrawPage(UpdateItem.WATCH_LATER_CHANGED)
         }
     }
 
