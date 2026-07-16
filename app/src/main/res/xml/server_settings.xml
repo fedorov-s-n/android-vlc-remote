@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="@string/settings" >
-    
+
+    <PreferenceCategory android:title="@string/preference_category_hdrezka_title">
+        <EditTextPreference
+            android:key="hdrezka_provider"
+            android:title="@string/pref_hdrezka_provider_title"
+            android:summary="@string/pref_hdrezka_provider_summary"
+            android:defaultValue="https://rezka.ag"
+            android:inputType="textUri"
+            android:persistent="true" />
+    </PreferenceCategory>
+
     <PreferenceScreen
         android:title="@string/preference_screen_interface_title"
         android:key="@string/preference_screen_interface_key"

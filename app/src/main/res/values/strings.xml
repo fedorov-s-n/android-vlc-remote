@@ -177,6 +177,9 @@
     <!-- Label for rezka.ag navigation tab -->
     <string name="tab_rezka">rezka.ag</string>
     <string name="tab_hdrezka">HDrezka</string>
+    <string name="preference_category_hdrezka_title">HDrezka</string>
+    <string name="pref_hdrezka_provider_title">Зеркало HDrezka</string>
+    <string name="pref_hdrezka_provider_summary">Адрес сайта HDrezka для вкладки (по умолчанию https://rezka.ag)</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

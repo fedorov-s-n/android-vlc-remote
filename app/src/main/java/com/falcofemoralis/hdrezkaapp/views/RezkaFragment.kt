@@ -4,15 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
-import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
+import androidx.preference.PreferenceManager
 import com.falcofemoralis.hdrezkaapp.constants.DeviceType
 import com.falcofemoralis.hdrezkaapp.constants.UpdateItem
 import com.falcofemoralis.hdrezkaapp.controllers.SocketFactory
@@ -20,8 +15,6 @@ import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
 import com.falcofemoralis.hdrezkaapp.interfaces.OnFragmentInteractionListener.Action
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.objects.UserData
-import com.falcofemoralis.hdrezkaapp.utils.DialogManager
-import com.falcofemoralis.hdrezkaapp.views.fragments.SettingsFragment
 import com.falcofemoralis.hdrezkaapp.views.fragments.ViewPagerFragment
 import com.jakewharton.processphoenix.ProcessPhoenix
 import com.squareup.picasso.Picasso
@@ -53,11 +46,39 @@ class RezkaFragment : Fragment(), HdrezkaHost {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // The ViewPager pre-creates this fragment for offscreen tabs, so nothing that
+        // touches the network runs here. Real init happens the first time the tab is
+        // actually shown to the user (see maybeInit / setUserVisibleHint).
+        maybeInit()
+    }
+
+    override fun setUserVisibleHint(isVisibleToUser: Boolean) {
+        super.setUserVisibleHint(isVisibleToUser)
+        if (isVisibleToUser) {
+            maybeInit()
+        }
+    }
+
+    /**
+     * Initialize the hdrezka environment and load its UI, but only once the tab is
+     * actually visible (deferred from app startup) and the view is ready.
+     */
+    private fun maybeInit() {
+        if (initialized || !userVisibleHint || view == null || !isAdded) {
+            return
+        }
+        initialized = true
 
         // The embedded experience is always the mobile UI.
         SettingsData.deviceType = DeviceType.MOBILE
 
-        SettingsData.initProvider(requireContext())
+        // The HDrezka mirror comes from the VLC settings screen (default rezka.ag),
+        // so there is no startup provider-entry dialog.
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val provider = prefs.getString(PROVIDER_PREF_KEY, DEFAULT_PROVIDER)
+            ?.takeIf { it.isNotBlank() } ?: DEFAULT_PROVIDER
+        SettingsData.setProvider(provider, requireContext(), true)
+
         try {
             setDefaultSSLSocketFactory(SocketFactory())
         } catch (e: Exception) {
@@ -69,14 +90,13 @@ class RezkaFragment : Fragment(), HdrezkaHost {
         // NOTE: the avatar normally opens hdrezka Settings (a PreferenceFragmentCompat).
         // That needs `preferenceTheme` on the host theme and is deferred for now.
 
-        if (!initialized) {
-            initialized = true
-            if (SettingsData.provider.isNullOrEmpty()) {
-                showProviderEnter()
-            } else {
-                loadMain()
-            }
-        }
+        loadMain()
+    }
+
+    companion object {
+        /** Key of the HDrezka mirror preference on the VLC settings screen. */
+        const val PROVIDER_PREF_KEY = "hdrezka_provider"
+        const val DEFAULT_PROVIDER = "https://rezka.ag"
     }
 
     private fun loadMain() {
@@ -213,43 +233,7 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     override fun showProviderEnter() {
-        val builder = DialogManager.getDialog(requireContext(), R.string.provider_enter_title)
-        val dialogView = layoutInflater.inflate(R.layout.dialog_provider_enter, null)
-        val spinner = dialogView.findViewById<SmartMaterialSpinner<String>>(R.id.dialog_provider_protocol)
-        val editText = dialogView.findViewById<EditText>(R.id.dialog_provider_enter)
-        val adapter: ArrayAdapter<*> = ArrayAdapter.createFromResource(requireContext(), R.array.providerProtocols, android.R.layout.simple_spinner_item)
-        var selectedProtocol = ""
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, itemSelected: View?, selectedItemPosition: Int, selectedId: Long) {
-                val arr = resources.getStringArray(R.array.providerProtocols)
-                selectedProtocol = arr[selectedItemPosition]
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        spinner.setSelection(0)
-
-        builder.setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.cancel() }
-        builder.setPositiveButton(getString(R.string.ok), null)
-        builder.setView(dialogView)
-        builder.setCancelable(false)
-        val d = builder.create()
-        d.show()
-
-        d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val enteredText = editText.text.toString().replace(" ", "").replace("\n", "")
-            if (enteredText.isNotEmpty()) {
-                val link = selectedProtocol + enteredText
-                Toast.makeText(requireContext(), getString(R.string.new_provider, link), Toast.LENGTH_LONG).show()
-                SettingsData.setProvider(link, requireContext(), true)
-                d.cancel()
-                loadMain()
-            } else {
-                Toast.makeText(requireContext(), getString(R.string.empty_provider), Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Provider is configured via the VLC settings screen; nothing to prompt here.
     }
 
     // endregion
