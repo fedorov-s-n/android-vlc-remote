@@ -3,7 +3,27 @@
     android:height="32dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+    <!-- Blue halo following the glyph outline (widest/faintest first), like shuffle "on". -->
     <path
-        android:fillColor="@color/primary_red"
-        android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z" />
+        android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z"
+        android:fillColor="#00000000"
+        android:strokeColor="#5BC8F5"
+        android:strokeWidth="6"
+        android:strokeAlpha="0.3" />
+    <path
+        android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z"
+        android:fillColor="#00000000"
+        android:strokeColor="#5BC8F5"
+        android:strokeWidth="4"
+        android:strokeAlpha="0.5" />
+    <path
+        android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z"
+        android:fillColor="#00000000"
+        android:strokeColor="#5BC8F5"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.8" />
+    <!-- The glyph itself stays white. -->
+    <path
+        android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z"
+        android:fillColor="#FFFFFFFF" />
 </vector>
