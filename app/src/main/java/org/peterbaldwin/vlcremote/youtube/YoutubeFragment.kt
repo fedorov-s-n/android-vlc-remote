@@ -53,11 +53,6 @@ class YoutubeFragment : Fragment() {
         searchFragment()?.onHistoryRequested()
     }
 
-    /** Toolbar sort: re-order the search results with the current sort. */
-    fun applySort() {
-        searchFragment()?.applySort()
-    }
-
     private fun searchFragment(): YoutubeSearchFragment? =
         childFragmentManager.fragments.firstOrNull { it is YoutubeSearchFragment } as? YoutubeSearchFragment
 }

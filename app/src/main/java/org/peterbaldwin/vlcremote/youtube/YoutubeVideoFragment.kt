@@ -173,18 +173,20 @@ class YoutubeVideoFragment : Fragment() {
 
         val options = ArrayList<String>()
         options.add(":meta-title=" + v.title)
-        // A video-only stream has no audio of its own; attach the selected audio track.
+
+        // Extra inputs attached to the main stream. VLC auto-detects each slave's type
+        // (audio vs subtitle), and both go through :input-slave (the audio path that works),
+        // joined with '#' when there are several.
+        val slaves = ArrayList<String>()
         if (quality.isVideoOnly) {
-            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let {
-                options.add(":input-slave=" + it.url)
-            }
+            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { slaves.add(it.url) }
         }
-        // Subtitle spinner index 0 is "no subtitles".
-        val subPos = subtitleSpinner.selectedItemPosition
+        val subPos = subtitleSpinner.selectedItemPosition // index 0 = "no subtitles"
         if (subPos > 0) {
-            v.subtitles.getOrNull(subPos - 1)?.let {
-                options.add(":sub-file=" + it.url)
-            }
+            v.subtitles.getOrNull(subPos - 1)?.let { slaves.add(it.url) }
+        }
+        if (slaves.isNotEmpty()) {
+            options.add(":input-slave=" + slaves.joinToString("#"))
         }
 
         RezkaPlayback.clear()

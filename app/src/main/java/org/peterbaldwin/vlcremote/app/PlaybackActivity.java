@@ -362,17 +362,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         menu.findItem(R.id.menu_clear_playlist).setVisible(isPlaylistVisible);
         menu.findItem(R.id.menu_refresh).setVisible(isPlaylistVisible);
         menu.findItem(R.id.menu_hdrezka_history).setVisible(isCurrentTab(TAB_HDREZKA));
-        boolean isYoutube = isCurrentTab(TAB_YOUTUBE);
-        menu.findItem(R.id.menu_youtube_history).setVisible(isYoutube);
-        menu.findItem(R.id.menu_youtube_sort_relevance).setVisible(isYoutube);
-        menu.findItem(R.id.menu_youtube_sort_date).setVisible(isYoutube);
-        menu.findItem(R.id.menu_youtube_sort_views).setVisible(isYoutube);
-        if (isYoutube) {
-            org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode m = org.peterbaldwin.vlcremote.youtube.YoutubeSort.mode;
-            setSortIconActive(menu.findItem(R.id.menu_youtube_sort_relevance), m == org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.RELEVANCE);
-            setSortIconActive(menu.findItem(R.id.menu_youtube_sort_date), m == org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.DATE);
-            setSortIconActive(menu.findItem(R.id.menu_youtube_sort_views), m == org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.VIEWS);
-        }
+        menu.findItem(R.id.menu_youtube_history).setVisible(isCurrentTab(TAB_YOUTUBE));
         menu.findItem(R.id.menu_home).setVisible(isBrowseVisible);
         menu.findItem(R.id.menu_libraries).setVisible(isBrowseVisible);
         menu.findItem(R.id.menu_parent).setVisible(isBrowseVisible);
@@ -410,15 +400,6 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
                 if (f != null) f.showHistory();
                 return true;
             }
-            case R.id.menu_youtube_sort_relevance:
-                setYoutubeSort(org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.RELEVANCE);
-                return true;
-            case R.id.menu_youtube_sort_date:
-                setYoutubeSort(org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.DATE);
-                return true;
-            case R.id.menu_youtube_sort_views:
-                setYoutubeSort(org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode.VIEWS);
-                return true;
             case R.id.menu_preferences:
                 pickServer();
                 return true;
@@ -452,12 +433,6 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         }
     }
     
-    private void setSortIconActive(MenuItem item, boolean active) {
-        if (item != null && item.getIcon() != null) {
-            item.getIcon().setAlpha(active ? 255 : 120);
-        }
-    }
-
     private org.peterbaldwin.vlcremote.youtube.YoutubeFragment youtubeFragment() {
         if (mPager == null) {
             return null;
@@ -466,15 +441,6 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
         return (f instanceof org.peterbaldwin.vlcremote.youtube.YoutubeFragment)
                 ? (org.peterbaldwin.vlcremote.youtube.YoutubeFragment) f : null;
-    }
-
-    private void setYoutubeSort(org.peterbaldwin.vlcremote.youtube.YoutubeSort.Mode mode) {
-        org.peterbaldwin.vlcremote.youtube.YoutubeSort.mode = mode;
-        org.peterbaldwin.vlcremote.youtube.YoutubeFragment f = youtubeFragment();
-        if (f != null) {
-            f.applySort();
-        }
-        supportInvalidateOptionsMenu();
     }
 
     private void showHdrezkaHistory() {

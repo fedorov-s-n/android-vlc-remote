@@ -23,21 +23,6 @@
         android:icon="@android:drawable/ic_menu_recent_history"
         android:showAsAction="always" />
     <item
-        android:id="@+id/menu_youtube_sort_relevance"
-        android:title="@string/youtube_sort_relevance"
-        android:icon="@drawable/ic_yt_sort_relevance"
-        android:showAsAction="always" />
-    <item
-        android:id="@+id/menu_youtube_sort_date"
-        android:title="@string/youtube_sort_date"
-        android:icon="@drawable/ic_yt_sort_date"
-        android:showAsAction="always" />
-    <item
-        android:id="@+id/menu_youtube_sort_views"
-        android:title="@string/youtube_sort_views"
-        android:icon="@drawable/ic_yt_sort_views"
-        android:showAsAction="always" />
-    <item
         android:id="@+id/menu_youtube_history"
         android:title="@string/youtube_history"
         android:icon="@android:drawable/ic_menu_recent_history"

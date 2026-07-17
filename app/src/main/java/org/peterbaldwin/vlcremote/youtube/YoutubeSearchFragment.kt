@@ -78,11 +78,6 @@ class YoutubeSearchFragment : Fragment() {
         return view
     }
 
-    /** Re-orders the currently loaded results with the sort chosen in the toolbar. */
-    fun applySort() {
-        if (isAdded) submitOrdered()
-    }
-
     /** Toolbar History: clear the query and show the recently opened items. */
     fun onHistoryRequested() {
         if (!isAdded) return
@@ -112,12 +107,7 @@ class YoutubeSearchFragment : Fragment() {
         val channels = allItems.filter { it.kind == YtKind.CHANNEL }
         val playlists = allItems.filter { it.kind == YtKind.PLAYLIST }
         val videos = allItems.filter { it.kind == YtKind.STREAM }
-        val sortedVideos = when (YoutubeSort.mode) {
-            YoutubeSort.Mode.DATE -> videos.sortedByDescending { it.uploadedMillis ?: Long.MIN_VALUE }
-            YoutubeSort.Mode.VIEWS -> videos.sortedByDescending { it.viewCount }
-            YoutubeSort.Mode.RELEVANCE -> videos
-        }
-        adapter.setItems(channels + playlists + sortedVideos)
+        adapter.setItems(channels + playlists + videos)
     }
 
     private fun doSearch(q: String) {
