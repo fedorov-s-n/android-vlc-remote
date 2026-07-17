@@ -78,6 +78,11 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
     private int mAutorunPrevLength;
     private boolean mAutorunFiredForThisEnd;
 
+    // True while the user is dragging the position seekbar, so we don't flood VLC with a
+    // seek command per pixel (which hangs network streams) and don't fight the thumb with
+    // status updates. A single seek is issued when the drag ends.
+    private boolean mTrackingPosition;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.audio_player_common, container, false);
@@ -173,17 +178,23 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         if (seekBar == mSeekPosition) {
             if (fromUser) {
-                seekPosition();
+                // Only preview the target time while dragging; the actual seek is issued
+                // once, on release, to avoid overwhelming VLC with per-pixel seeks.
+                mTextTime.setText(formatTime(progress));
             }
         }
     }
 
     /** {@inheritDoc} */
     public void onStartTrackingTouch(SeekBar seekBar) {
+        if (seekBar == mSeekPosition) {
+            mTrackingPosition = true;
+        }
     }
 
     /** {@inheritDoc} */
     public void onStopTrackingTouch(SeekBar seekBar) {
+        mTrackingPosition = false;
         if (seekBar == mSeekPosition) {
             seekPosition();
         }
@@ -220,17 +231,19 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         int time = status.getTime();
         int length = status.getLength();
         mSeekPosition.setMax(length);
-        mSeekPosition.setProgress(time);
 
         // Call setKeyProgressIncrement after calling setMax because the
         // implementation of setMax will automatically adjust the increment.
         mSeekPosition.setKeyProgressIncrement(3);
 
-        String formattedTime = formatTime(time);
-        mTextTime.setText(formattedTime);
-
         String formattedLength = formatTime(length);
         mTextLength.setText(formattedLength);
+
+        // While the user is dragging, leave the thumb and time under their control.
+        if (!mTrackingPosition) {
+            mSeekPosition.setProgress(time);
+            mTextTime.setText(formatTime(time));
+        }
     }
 
     /**
