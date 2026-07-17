@@ -182,6 +182,11 @@
     <string name="sel_episode">Серия</string>
     <string name="sel_quality">Качество</string>
     <string name="sel_subtitle">Субтитры</string>
+    <string name="play_in_vlc">Смотреть в VLC</string>
+    <string name="vlc_no_server">Сначала выберите VLC-сервер</string>
+    <string name="vlc_no_stream">Поток не выбран</string>
+    <string name="vlc_sent">Отправлено в VLC</string>
+    <string name="vlc_subtitle_failed">Не удалось загрузить субтитры (нужен помощник на порту 3900)</string>
     <string name="preference_category_hdrezka_title">HDrezka</string>
     <string name="pref_hdrezka_provider_title">Зеркало HDrezka</string>
     <string name="pref_hdrezka_provider_summary">Адрес сайта HDrezka для вкладки (по умолчанию https://rezka.ag)</string>

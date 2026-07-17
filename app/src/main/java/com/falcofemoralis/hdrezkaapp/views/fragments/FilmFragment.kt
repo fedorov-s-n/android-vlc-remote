@@ -270,6 +270,56 @@ class FilmFragment : Fragment(), FilmView {
         subtitleSpinner = currentView.findViewById(R.id.fragment_film_sp_subtitle)
         seasonLabel = currentView.findViewById(R.id.fragment_film_tv_season_label)
         episodeLabel = currentView.findViewById(R.id.fragment_film_tv_episode_label)
+        currentView.findViewById<View>(R.id.fragment_film_btn_play_vlc).setOnClickListener { playInVlc() }
+    }
+
+    /** Sends the currently selected stream (voice/season/episode/quality) to the remote VLC. */
+    private fun playInVlc() {
+        val voice = selCurrentVoice
+        val stream = voice?.streams?.getOrNull(qualitySpinner.selectedItemPosition)
+        if (voice == null || stream == null) {
+            Toast.makeText(requireContext(), getString(R.string.vlc_no_stream), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authority = org.peterbaldwin.vlcremote.model.Preferences.get(requireContext()).authority
+        if (authority == null) {
+            Toast.makeText(requireContext(), getString(R.string.vlc_no_server), Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val server = org.peterbaldwin.vlcremote.net.MediaServer(requireContext(), authority)
+        server.status().command.input.play(stream.url)
+
+        // Attach the selected subtitle track (index 0 is "off"). VLC's addsubtitle does
+        // not accept remote URLs, so we ask the companion download helper (running on the
+        // VLC host, port 3900) to fetch the subtitle to a local temp file first, then feed
+        // that path to VLC and toggle the subtitle track on.
+        val subPos = subtitleSpinner.selectedItemPosition
+        if (subPos > 0) {
+            voice.subtitles?.getOrNull(subPos - 1)?.let { sub ->
+                val host = org.peterbaldwin.vlcremote.model.Server.fromKey(authority).host
+                val ext = sub.url.substringBefore('?').substringAfterLast('.', "vtt")
+                val name = sub.lang.replace(Regex("[^A-Za-z0-9]"), "_") + "." + ext
+                org.peterbaldwin.vlcremote.rezka.DownloadPathClient.requestTempPath(
+                    host, 3900, sub.url, name,
+                    object : org.peterbaldwin.vlcremote.rezka.DownloadPathClient.Callback {
+                        override fun onSuccess(tempPath: String) {
+                            server.status().command.input.subtitles(tempPath)
+                            currentView.postDelayed({
+                                server.status().command.key(org.peterbaldwin.vlcremote.model.Hotkeys.SUBTITLE_TRACK)
+                            }, 3000)
+                        }
+
+                        override fun onError(e: Exception, serverBody: String?) {
+                            Toast.makeText(requireContext(), getString(R.string.vlc_subtitle_failed), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+        }
+
+        Toast.makeText(requireContext(), getString(R.string.vlc_sent), Toast.LENGTH_SHORT).show()
     }
 
     private fun <T> spinnerAdapter(items: List<T>): ArrayAdapter<T> {

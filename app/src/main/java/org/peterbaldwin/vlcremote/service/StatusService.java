@@ -240,7 +240,7 @@ public class StatusService extends Service implements Handler.Callback {
                 Preferences pref = Preferences.get(this);
                 Status status = server.status(uri).read();
                 if (seqNumber == mSequenceNumber.get()) {
-                    sendBroadcast(Intents.status(status));
+                    sendAppBroadcast(Intents.status(status));
                     Message n = mRemoteViewsHandler.obtainMessage(HANDLE_REMOTE_VIEWS, seqNumber, REMOTE_STATUS, status);
                     n.sendToTarget();
                     if (isCommand(uri)) {
@@ -261,7 +261,7 @@ public class StatusService extends Service implements Handler.Callback {
                 Log.e(TAG, "Error: " + tr.getMessage());
                 Intent broadcast = Intents.error(tr);
                 broadcast.putExtra(Intents.EXTRA_FLAGS, flags);
-                sendBroadcast(broadcast);
+                sendAppBroadcast(broadcast);
                 mRemoteViewsHandler.obtainMessage(HANDLE_REMOTE_VIEWS, seqNumber, REMOTE_ERROR, tr).sendToTarget();
             }
         } else {
@@ -277,14 +277,14 @@ public class StatusService extends Service implements Handler.Callback {
             try {
                 Bitmap bitmap = server.image(uri).read();
                 if (sequenceNumber == mSequenceNumber.get()) {
-                    sendBroadcast(Intents.art(bitmap));
+                    sendAppBroadcast(Intents.art(bitmap));
                 } else {
                     Log.d(TAG, "Dropped stale album art response: " + uri);
                 }
             } catch (Throwable tr) {
                 String message = String.valueOf(tr);
                 Log.e(TAG, message, tr);
-                sendBroadcast(Intents.error(tr));
+                sendAppBroadcast(Intents.error(tr));
             }
         } else {
             Log.d(TAG, "Dropped stale album art request: " + uri);
@@ -347,6 +347,16 @@ public class StatusService extends Service implements Handler.Callback {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    /**
+     * Sends an app-internal broadcast. The package is set explicitly so that the
+     * broadcast is reliably delivered to context-registered (RECEIVER_NOT_EXPORTED)
+     * receivers on modern Android, where implicit broadcasts are not delivered to them.
+     */
+    private void sendAppBroadcast(Intent intent) {
+        intent.setPackage(getPackageName());
+        sendBroadcast(intent);
     }
     
     private void sendStatusRequest() {

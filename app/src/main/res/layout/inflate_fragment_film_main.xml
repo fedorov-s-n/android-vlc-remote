@@ -293,6 +293,22 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
+    <!-- Play the selected stream on the remote VLC -->
+    <TextView
+        android:id="@+id/fragment_film_btn_play_vlc"
+        style="@style/app_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:text="@string/play_in_vlc"
+        android:textSize="@dimen/normal_text" />
+
     <!-- Plot -->
     <LinearLayout
         android:layout_width="match_parent"

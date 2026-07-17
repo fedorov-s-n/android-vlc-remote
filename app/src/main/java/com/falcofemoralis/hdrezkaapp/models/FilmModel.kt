@@ -653,11 +653,15 @@ object FilmModel {
                     // The quality label inside [ ] can contain HTML (e.g. premium
                     // "1080p Ultra" wrapped in <span>/<img>); strip it to plain text.
                     val quality = Jsoup.parse(str.substring(1, str.indexOf("]"))).text().trim()
-                    if (str.contains(" or ")) {
-                        parsedStreams.add(Stream(str.split(" or ").toTypedArray()[1], quality))
-                    } else {
-                        parsedStreams.add(Stream(str.substring(str.indexOf("]") + 1), quality))
+                    // Each quality may offer several URLs separated by " or " (a direct
+                    // .mp4 and an HLS .m3u8). Prefer the direct .mp4 — VLC plays it with
+                    // full audio, whereas the HLS variant has degraded/limited audio.
+                    val urls = str.substring(str.indexOf("]") + 1).split(" or ")
+                    var url = urls[0]
+                    for (u in urls) {
+                        if (u.endsWith(".mp4")) url = u
                     }
+                    parsedStreams.add(Stream(url, quality))
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
