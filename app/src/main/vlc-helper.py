@@ -129,15 +129,23 @@ def _active_count() -> int:
     return sum(1 for j in _mux_jobs.values() if j["proc"].poll() is None)
 
 
-def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""):
-    """Returns (job_id, error). error is a string if the job could not be started."""
+def _resolve_jid(pathlike: str) -> str:
+    """Accept a full path, a basename (mux_<jid>.mkv) or a bare id, return the job id."""
+    base = os.path.basename(pathlike or "")
+    if base.startswith("mux_") and base.endswith(".mkv"):
+        return base[len("mux_"):-len(".mkv")]
+    return pathlike or ""
+
+
+def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = "", duration: int = 0):
+    """Returns (path, error). error is a string if the job could not be started."""
     jid = _job_id(v, a)
     with _mux_lock:
         job = _mux_jobs.get(jid)
         if job is not None:
             # Reuse an existing (running or finished) job for the same pair.
             if job["proc"].poll() is None or os.path.exists(job["path"]):
-                return jid, None
+                return job["path"], None
         if _active_count() >= MAX_JOBS:
             return None, "busy: %d downloads already running" % MAX_JOBS
         path = os.path.join(tempfile.gettempdir(), "mux_%s.mkv" % jid)
@@ -159,8 +167,9 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
         cmd += ["-f", "matroska", path]
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _mux_jobs[jid] = {"path": path, "proc": proc,
-                          "total": _clen(v) + _clen(a), "start": time.time()}
-        return jid, None
+                          "total": _clen(v) + _clen(a), "start": time.time(),
+                          "dur": duration}
+        return path, None
 
 
 def _job_size(job) -> int:
@@ -172,18 +181,19 @@ def _job_size(job) -> int:
 
 def mux_status(jid: str) -> str:
     """One line (path is the last, space-free field):
-       DONE <bytes> <total> <ms> <path> | RUNNING <bytes> <total> <ms> <path>
+       DONE <bytes> <total> <ms> <durSec> <path> | RUNNING <bytes> <total> <ms> <durSec> <path>
        | ERROR <code> | UNKNOWN"""
     job = _mux_jobs.get(jid)
     if job is None:
         return "UNKNOWN"
     ms = int((time.time() - job["start"]) * 1000)
     size = _job_size(job)
+    dur = job.get("dur", 0)
     code = job["proc"].poll()
     if code is None:
-        return "RUNNING %d %d %d %s" % (size, job["total"], ms, job["path"])
+        return "RUNNING %d %d %d %d %s" % (size, job["total"], ms, dur, job["path"])
     if code == 0 and os.path.exists(job["path"]):
-        return "DONE %d %d %d %s" % (size, size, ms, job["path"])
+        return "DONE %d %d %d %d %s" % (size, size, ms, dur, job["path"])
     return "ERROR %s" % code
 
 
@@ -273,25 +283,29 @@ class Handler(BaseHTTPRequestHandler):
             title = qs.get("t", [""])[0] or ""
             artist = qs.get("c", [""])[0] or ""
             album = qs.get("al", [""])[0] or ""
-            jid, err = start_mux(v, a, title, artist, album)
+            try:
+                duration = int(qs.get("d", ["0"])[0] or "0")
+            except ValueError:
+                duration = 0
+            path, err = start_mux(v, a, title, artist, album, duration)
             if err:
                 self._send(503, "ERROR: " + err + "\n")
             else:
-                self._send(200, jid + "\n")
+                self._send(200, path + "\n")
             return
         if parsed.path == "/mux/status":
-            jid = qs.get("id", [None])[0]
-            if not jid:
-                self._send(400, "Missing 'id'\n")
+            key = qs.get("path", [None])[0] or qs.get("id", [None])[0]
+            if not key:
+                self._send(400, "Missing 'path'\n")
                 return
-            self._send(200, mux_status(jid) + "\n")
+            self._send(200, mux_status(_resolve_jid(key)) + "\n")
             return
         if parsed.path == "/mux/cancel":
-            jid = qs.get("id", [None])[0]
-            if not jid:
-                self._send(400, "Missing 'id'\n")
+            key = qs.get("path", [None])[0] or qs.get("id", [None])[0]
+            if not key:
+                self._send(400, "Missing 'path'\n")
                 return
-            self._send(200, cancel_mux(jid) + "\n")
+            self._send(200, cancel_mux(_resolve_jid(key)) + "\n")
             return
 
         if parsed.path not in ("/", "/download"):

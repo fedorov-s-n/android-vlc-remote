@@ -227,6 +227,19 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
     void onStatusChanged(Status status) {
         handleAutorun(status);
 
+        // After an app restart, reconnect to a still-running download for the file VLC is
+        // currently playing (mux_<id>.mkv) so the progress indicator + polling resume.
+        if (!org.peterbaldwin.vlcremote.youtube.YtDownloadManager.isActive() && status.getTrack() != null) {
+            String fn = status.getTrack().getName();
+            if (fn != null && fn.startsWith("mux_") && fn.endsWith(".mkv")) {
+                Preferences prefs = Preferences.get(getActivity());
+                String authority = prefs == null ? null : prefs.getAuthority();
+                if (authority != null) {
+                    org.peterbaldwin.vlcremote.youtube.YtDownloadManager.resume(getActivity(), fn, authority);
+                }
+            }
+        }
+
         // YouTube "Best" download progress / completion indicator.
         if (mDownloadStatus != null) {
             String dl = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.statusText();

@@ -30,7 +30,7 @@ object YtDownloadManager {
     private var appContext: Context? = null
     private var host: String? = null
     private var port: Int = 3900
-    private var jobId: String? = null
+    private var jobKey: String? = null
     private var authority: String? = null
     private var title: String? = null
     private var durationSec: Long = 0
@@ -41,6 +41,7 @@ object YtDownloadManager {
     private var prevBytes = 0L
     private var prevMs = 0L
     private var downloadedSec = 0L
+    private var resuming = false
 
     /** Text for the Now Playing tab; null when nothing to show. Persists until [cancel]. */
     @Volatile
@@ -50,7 +51,7 @@ object YtDownloadManager {
     fun statusText(): String? = statusText
 
     @JvmStatic
-    fun isActive(): Boolean = jobId != null || statusText != null
+    fun isActive(): Boolean = jobKey != null || statusText != null
 
     /** Full video duration (seconds) of the active download, or 0 — so Now Playing can show the
      *  real total time immediately instead of VLC's still-growing length. */
@@ -105,26 +106,70 @@ object YtDownloadManager {
         val h = host ?: return
         val p = port
         GlobalScope.launch(Dispatchers.IO) {
-            val id = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "")
+            val key = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "", durationSec)
             withContext(Dispatchers.Main) {
-                if (id == null) {
+                if (key == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"
                     return@withContext
                 }
-                jobId = id
+                jobKey = key
                 poll()
             }
         }
     }
 
+    /**
+     * Reconnects to a still-running/finished helper job after the app was restarted, given the
+     * file VLC is currently playing (basename mux_<id>.mkv). Resumes the progress indicator and
+     * polling without restarting playback.
+     */
+    @JvmStatic
+    fun resume(context: Context, playingFileName: String, authority: String) {
+        if (isActive() || resuming) return
+        val ctx = context.applicationContext
+        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) return
+        val h = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
+            ?: Server.fromKey(authority).host
+        val p = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
+        resuming = true
+        GlobalScope.launch(Dispatchers.IO) {
+            val st = MuxClient.status(h, p, playingFileName)
+            withContext(Dispatchers.Main) {
+                resuming = false
+                if (isActive()) return@withContext
+                if (!st.running && !st.done) return@withContext  // helper doesn't know it
+                appContext = ctx
+                this@YtDownloadManager.authority = authority
+                host = h
+                port = p
+                jobKey = playingFileName
+                durationSec = st.durationSec
+                title = null
+                subtitleUrl = null
+                playStarted = true  // VLC is already playing this file
+                prevBytes = st.bytes
+                prevMs = st.ms
+                if (st.done) {
+                    downloadedSec = durationSec
+                    statusText = "Downloaded • " + sizeMb(st.total) + " • " + clock(st.ms)
+                } else {
+                    downloadedSec = if (st.total > 0) (st.bytes.toDouble() / st.total * durationSec).toLong() else 0
+                    statusText = "Downloading…"
+                    poll()
+                }
+            }
+        }
+    }
+
     private fun poll() {
-        val id = jobId ?: return
+        val id = jobKey ?: return
         val h = host ?: return
         val p = port
         GlobalScope.launch(Dispatchers.IO) {
             val st = MuxClient.status(h, p, id)
             withContext(Dispatchers.Main) {
-                if (jobId != id) return@withContext  // cancelled or switched away
+                if (jobKey != id) return@withContext  // cancelled or switched away
                 var reschedule = true
                 when {
                     st.running -> {
@@ -149,7 +194,7 @@ object YtDownloadManager {
                     else -> {  // ERROR / UNKNOWN / network blip
                         if (st.state == "ERROR" || st.state == "UNKNOWN") {
                             statusText = "Download failed"
-                            jobId = null
+                            jobKey = null
                             reschedule = false
                         }
                     }
@@ -198,10 +243,10 @@ object YtDownloadManager {
     /** Cancels the job (kills the host download, deletes the file) and clears the indicator. */
     @JvmStatic
     fun cancel() {
-        val id = jobId
+        val id = jobKey
         val h = host
         val p = port
-        jobId = null
+        jobKey = null
         playStarted = false
         statusText = null
         handler.removeCallbacksAndMessages(null)
