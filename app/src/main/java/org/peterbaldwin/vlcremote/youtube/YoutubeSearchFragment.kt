@@ -2,13 +2,21 @@ package org.peterbaldwin.vlcremote.youtube
 
 import android.content.Context
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,12 +26,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.peterbaldwin.client.android.vlcremote.R
 
-/** YouTube search: results (videos, channels, playlists) open the matching page. */
+/** YouTube search: rezka-style bar, results ordered channels -> playlists -> videos. */
 class YoutubeSearchFragment : Fragment() {
     private lateinit var adapter: YoutubeAdapter
     private lateinit var progress: View
     private lateinit var input: EditText
+    private lateinit var clear: ImageView
 
+    private val allItems = ArrayList<YtItem>()
+    private var query: String = ""
+    private var sortFilter: String? = null
     private var isLoading = false
     private var hasMore = false
 
@@ -31,6 +43,7 @@ class YoutubeSearchFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_youtube_search, container, false)
         progress = view.findViewById(R.id.youtube_progress)
         input = view.findViewById(R.id.youtube_search)
+        clear = view.findViewById(R.id.youtube_search_clear)
 
         adapter = YoutubeAdapter(::onItemClicked)
         val rv = view.findViewById<RecyclerView>(R.id.youtube_rv)
@@ -46,19 +59,61 @@ class YoutubeSearchFragment : Fragment() {
             }
         })
 
+        clear.setOnClickListener { input.setText("") }
+        input.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                clear.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
         input.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
-                val query = v.text.toString().trim()
-                if (query.isNotEmpty()) {
+                val q = v.text.toString().trim()
+                if (q.isNotEmpty()) {
                     hideKeyboard()
-                    doSearch(query)
+                    doSearch(q)
                 }
                 true
             } else {
                 false
             }
         }
+
+        setupSortBar(view)
         return view
+    }
+
+    /** Builds sort chips only if YouTube exposes sort filters. */
+    private fun setupSortBar(view: View) {
+        val filters = YoutubeClient.availableSortFilters()
+        if (filters.isEmpty()) return
+        view.findViewById<View>(R.id.youtube_sort_scroll).visibility = View.VISIBLE
+        val bar = view.findViewById<LinearLayout>(R.id.youtube_sort_bar)
+        val options = listOf<String?>(null) + filters // null = default
+        for (option in options) {
+            val chip = TextView(requireContext())
+            chip.text = option ?: getString(R.string.youtube_sort_default)
+            chip.setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.normal_text))
+            chip.setPadding(24, 10, 24, 10)
+            chip.setOnClickListener {
+                sortFilter = option
+                highlightSort(bar, it)
+                if (query.isNotEmpty()) doSearch(query)
+            }
+            bar.addView(chip)
+            if (option == null) highlightSort(bar, chip)
+        }
+    }
+
+    private fun highlightSort(bar: LinearLayout, selected: View) {
+        for (i in 0 until bar.childCount) {
+            val c = bar.getChildAt(i) as TextView
+            c.setTextColor(
+                if (c === selected) ContextCompat.getColor(requireContext(), R.color.primary_red)
+                else ContextCompat.getColor(requireContext(), R.color.white)
+            )
+        }
     }
 
     private fun onItemClicked(item: YtItem) {
@@ -70,16 +125,29 @@ class YoutubeSearchFragment : Fragment() {
         }
     }
 
-    private fun doSearch(query: String) {
+    private fun kindOrder(kind: YtKind): Int = when (kind) {
+        YtKind.CHANNEL -> 0
+        YtKind.PLAYLIST -> 1
+        YtKind.STREAM -> 2
+    }
+
+    private fun submitOrdered() {
+        adapter.setItems(allItems.sortedBy { kindOrder(it.kind) })
+    }
+
+    private fun doSearch(q: String) {
+        query = q
         isLoading = true
         hasMore = false
         progress.visibility = View.VISIBLE
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                val page = YoutubeClient.search(query)
+                val page = YoutubeClient.search(q, sortFilter)
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
-                    adapter.setItems(page.items)
+                    allItems.clear()
+                    allItems.addAll(page.items)
+                    submitOrdered()
                     hasMore = page.hasMore
                     isLoading = false
                     progress.visibility = View.GONE
@@ -104,7 +172,8 @@ class YoutubeSearchFragment : Fragment() {
                 val page = YoutubeClient.searchMore()
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
-                    adapter.addItems(page.items)
+                    allItems.addAll(page.items)
+                    submitOrdered()
                     hasMore = page.hasMore
                     isLoading = false
                 }

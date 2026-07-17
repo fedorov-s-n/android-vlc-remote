@@ -83,9 +83,21 @@ object YoutubeClient {
 
     // ---- Search (streams + channels + playlists) ----
 
-    fun search(query: String): YtPage {
+    /** Sort filters YouTube search actually offers (often none), for optional sort buttons. */
+    fun availableSortFilters(): List<String> = try {
         ensureInit()
-        val ex = ServiceList.YouTube.getSearchExtractor(query)
+        ServiceList.YouTube.searchQHFactory.availableSortFilter.toList()
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    fun search(query: String, sortFilter: String? = null): YtPage {
+        ensureInit()
+        val ex = if (sortFilter.isNullOrEmpty()) {
+            ServiceList.YouTube.getSearchExtractor(query)
+        } else {
+            ServiceList.YouTube.getSearchExtractor(query, emptyList(), sortFilter)
+        }
         ex.fetchPage()
         searchExtractor = ex
         val page = ex.initialPage
