@@ -27,6 +27,9 @@ class YoutubeFragment : Fragment() {
     private lateinit var progress: View
     private lateinit var input: EditText
 
+    private var isLoading = false
+    private var hasMore = false
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_youtube, container, false)
         progress = view.findViewById(R.id.youtube_progress)
@@ -34,8 +37,21 @@ class YoutubeFragment : Fragment() {
 
         adapter = YoutubeAdapter(::onItemClicked)
         val rv = view.findViewById<RecyclerView>(R.id.youtube_rv)
-        rv.layoutManager = LinearLayoutManager(context)
+        val layoutManager = LinearLayoutManager(context)
+        rv.layoutManager = layoutManager
         rv.adapter = adapter
+
+        // Load more pages as the user nears the end of the list.
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy <= 0 || isLoading || !hasMore) return
+                val total = layoutManager.itemCount
+                val lastVisible = layoutManager.findLastVisibleItemPosition()
+                if (lastVisible >= total - 4) {
+                    loadMore()
+                }
+            }
+        })
 
         input.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
@@ -53,21 +69,48 @@ class YoutubeFragment : Fragment() {
     }
 
     private fun doSearch(query: String) {
+        isLoading = true
+        hasMore = false
         progress.visibility = View.VISIBLE
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                val items = YoutubeClient.search(query)
+                val page = YoutubeClient.search(query)
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
-                    adapter.setItems(items)
+                    adapter.setItems(page.items)
+                    hasMore = page.hasMore
+                    isLoading = false
                     progress.visibility = View.GONE
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
+                    isLoading = false
                     progress.visibility = View.GONE
                     Toast.makeText(requireContext(), getString(R.string.youtube_error), Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun loadMore() {
+        if (isLoading || !hasMore) return
+        isLoading = true
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val page = YoutubeClient.searchMore()
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    adapter.addItems(page.items)
+                    hasMore = page.hasMore
+                    isLoading = false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    isLoading = false
                 }
             }
         }
