@@ -46,6 +46,16 @@
             android:textColor="#80FFFFFF"
             android:textSize="@dimen/small_text" />
 
+        <TextView
+            android:id="@+id/youtube_comment_replies"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:textColor="@color/primary_red"
+            android:textSize="@dimen/small_text"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 </LinearLayout>

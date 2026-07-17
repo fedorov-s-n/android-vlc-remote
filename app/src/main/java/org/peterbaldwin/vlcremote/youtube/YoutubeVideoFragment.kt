@@ -49,7 +49,7 @@ class YoutubeVideoFragment : Fragment() {
         subtitleSpinner = view.findViewById(R.id.youtube_video_subtitle)
         view.findViewById<TextView>(R.id.youtube_video_play).setOnClickListener { playInVlc() }
 
-        commentsAdapter = YoutubeCommentAdapter()
+        commentsAdapter = YoutubeCommentAdapter(::onExpandReplies)
         val commentsRv = view.findViewById<RecyclerView>(R.id.youtube_video_comments)
         commentsRv.layoutManager = LinearLayoutManager(context)
         commentsRv.adapter = commentsAdapter
@@ -144,6 +144,22 @@ class YoutubeVideoFragment : Fragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) { if (isAdded) commentsLoading = false }
+            }
+        }
+    }
+
+    private fun onExpandReplies(position: Int) {
+        val comment = commentsAdapter.itemAt(position) ?: return
+        val page = comment.repliesPage ?: return
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val replies = YoutubeClient.commentReplies(page)
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    commentsAdapter.insertReplies(position, replies.items)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

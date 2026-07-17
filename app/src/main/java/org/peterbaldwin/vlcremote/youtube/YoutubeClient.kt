@@ -34,8 +34,16 @@ data class YtItem(
 /** One page of list items plus whether more can be loaded. */
 data class YtPage(val items: List<YtItem>, val hasMore: Boolean)
 
-/** A single comment. */
-data class YtComment(val author: String, val text: String, val likes: Int, val avatarUrl: String?)
+/** A single comment (or reply). [repliesPage] non-null means replies can be loaded. */
+data class YtComment(
+    val author: String,
+    val text: String,
+    val likes: Int,
+    val avatarUrl: String?,
+    val replyCount: Int = 0,
+    val repliesPage: Page? = null,
+    val isReply: Boolean = false
+)
 
 /** One page of comments plus whether more can be loaded. */
 data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
@@ -245,13 +253,22 @@ object YoutubeClient {
         return YtCommentPage(mapComments(page.items), page.hasNextPage())
     }
 
-    private fun mapComments(items: List<CommentsInfoItem>): List<YtComment> =
+    fun commentReplies(page: Page): YtCommentPage {
+        val info = commentsInfo ?: return YtCommentPage(emptyList(), false)
+        val p = CommentsInfo.getMoreItems(ServiceList.YouTube, info, page)
+        return YtCommentPage(mapComments(p.items, isReply = true), p.hasNextPage())
+    }
+
+    private fun mapComments(items: List<CommentsInfoItem>, isReply: Boolean = false): List<YtComment> =
         items.map {
             YtComment(
                 it.uploaderName ?: "",
                 it.commentText?.content ?: "",
                 it.likeCount,
-                it.uploaderAvatars.maxByOrNull { a -> a.width }?.url
+                it.uploaderAvatars.maxByOrNull { a -> a.width }?.url,
+                if (isReply) 0 else it.replyCount,
+                if (isReply) null else it.replies,
+                isReply
             )
         }
 

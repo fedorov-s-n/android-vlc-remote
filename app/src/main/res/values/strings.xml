@@ -232,6 +232,8 @@
     <string name="youtube_sort_views">Views</string>
     <string name="youtube_comments">Comments</string>
     <string name="youtube_likes">&#128077; %d</string>
+    <string name="youtube_view_replies">View %d replies</string>
+    <string name="youtube_replies">View replies</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>
