@@ -1,15 +1,12 @@
 package com.falcofemoralis.hdrezkaapp.views
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.preference.PreferenceManager
@@ -23,10 +20,7 @@ import com.falcofemoralis.hdrezkaapp.objects.UserData
 import com.falcofemoralis.hdrezkaapp.utils.WebViewHttp
 import com.falcofemoralis.hdrezkaapp.views.fragments.SearchFragment
 import com.jakewharton.processphoenix.ProcessPhoenix
-import com.squareup.picasso.Picasso
-import de.hdodenhof.circleimageview.CircleImageView
 import org.peterbaldwin.client.android.vlcremote.R
-import ru.nikartm.support.ImageBadgeView
 import javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory
 
 /**
@@ -44,9 +38,6 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     private var currentFragment: Fragment? = null
     private var isSettingsOpened = false
     private var initialized = false
-    private var loaded = false
-    private val proceedHandler = Handler(Looper.getMainLooper())
-    private val proceedRunnable = Runnable { proceedToContent() }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         rootView = inflater.inflate(R.layout.fragment_rezka, container, false)
@@ -96,29 +87,23 @@ class RezkaFragment : Fragment(), HdrezkaHost {
         SettingsData.init(requireContext().applicationContext)
         UserData.init(requireContext().applicationContext)
 
-        // NOTE: the avatar normally opens hdrezka Settings (a PreferenceFragmentCompat).
-        // That needs `preferenceTheme` on the host theme and is deferred for now.
-
+        // Warm up the hidden WebView in the background (loads the mirror origin so
+        // Cloudflare sets cf_clearance and later same-origin fetch() requests pass),
+        // but show the search UI immediately — it has no initial network request.
         if (WEBVIEW_WARMUP_ENABLED) {
-            warmUpThenLoad()
-        } else {
-            proceedToContent()
+            startWarmup()
         }
+        loadMain()
     }
 
     /**
-     * Loads the mirror once in a hidden WebView so it can clear the site's anti-bot
-     * (Cloudflare) check and populate cookies (cf_clearance). The jsoup/OkHttp calls
-     * then reuse those cookies (BaseModel attaches CookieManager cookies). DNS keeps
-     * going through DoH. Falls back to loading content directly if warm-up stalls.
+     * Attaches the hidden WebView as the HTTP transport and loads the mirror origin
+     * so it clears Cloudflare (cf_clearance) in the background. Does not block the UI.
      */
-    private fun warmUpThenLoad() {
+    private fun startWarmup() {
         val provider = SettingsData.provider
         val webView = view?.findViewById<WebView>(R.id.rezka_wv)
-        if (provider.isNullOrEmpty() || webView == null) {
-            proceedToContent()
-            return
-        }
+        if (provider.isNullOrEmpty() || webView == null) return
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -130,39 +115,20 @@ class RezkaFragment : Fragment(), HdrezkaHost {
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
-        // Use the WebView UA everywhere so cf_clearance (bound to UA) stays valid
-        // for the jsoup/OkHttp requests too.
         SettingsData.useragent = webView.settings.userAgentString
 
-        // Route hdrezka requests through this WebView (same-origin fetch) so they pass
-        // Cloudflare. Requests only start after the origin has loaded (see proceed).
         WebViewHttp.attach(webView)
         WebViewHttp.enabled = true
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 cookieManager.flush()
-                // Re-arm after each navigation (challenge page -> real page); proceed
-                // once things settle.
-                proceedHandler.removeCallbacks(proceedRunnable)
-                proceedHandler.postDelayed(proceedRunnable, 2500)
             }
         }
-
         webView.loadUrl(provider)
-        // Absolute safety net so the tab is never stuck if warm-up never settles.
-        proceedHandler.postDelayed(proceedRunnable, 12000)
-    }
-
-    private fun proceedToContent() {
-        if (loaded) return
-        loaded = true
-        proceedHandler.removeCallbacks(proceedRunnable)
-        loadMain()
     }
 
     override fun onDestroyView() {
-        proceedHandler.removeCallbacks(proceedRunnable)
         view?.findViewById<WebView>(R.id.rezka_wv)?.let { WebViewHttp.detach(it) }
         WebViewHttp.enabled = false
         super.onDestroyView()
@@ -170,11 +136,9 @@ class RezkaFragment : Fragment(), HdrezkaHost {
 
     companion object {
         /**
-         * Master switch for the hidden-WebView anti-bot (Cloudflare) bypass.
-         * true  = load the mirror in a hidden WebView and route all hdrezka HTTP
-         *         requests through it (same-origin fetch) so they pass Cloudflare.
-         * false = load hdrezka content directly via OkHttp/DoH (will hit Cloudflare
-         *         403/challenge on protected mirrors), original behaviour.
+         * Routes hdrezka HTTP through the hidden WebView (same-origin fetch, passes
+         * Cloudflare). Effectively required: there is no non-WebView transport, so
+         * setting this false leaves the tab with no way to make requests.
          */
         const val WEBVIEW_WARMUP_ENABLED = true
 
@@ -287,13 +251,7 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     override fun setUserAvatar() {
-        val imageView = view?.findViewById<CircleImageView>(R.id.rezka_iv_user) ?: return
-        val avatar = UserData.avatarLink
-        if (!avatar.isNullOrEmpty()) {
-            Picasso.get().load(avatar).into(imageView)
-        } else {
-            imageView.setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.no_avatar))
-        }
+        // No avatar UI in the search-only tab.
     }
 
     override fun initSeriesUpdates() {
@@ -302,15 +260,7 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     override fun updateNotifyBadge(badgeCount: Int) {
-        val notifyBtn = view?.findViewById<ImageBadgeView>(R.id.rezka_iv_notify_btn) ?: return
-        if (badgeCount > 0) {
-            notifyBtn.badgeValue = badgeCount
-            notifyBtn.isShowCounter = true
-            notifyBtn.badgeColor = ContextCompat.getColor(requireContext(), R.color.primary_red)
-        } else {
-            notifyBtn.isShowCounter = false
-            notifyBtn.badgeColor = ContextCompat.getColor(requireContext(), R.color.transparent)
-        }
+        // No notify badge UI in the search-only tab.
     }
 
     override fun refreshActivity() {
