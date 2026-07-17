@@ -8,7 +8,10 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -20,11 +23,14 @@ import org.peterbaldwin.vlcremote.net.MediaServer
 
 /** A single video: info, a quality dropdown, Play in VLC, and a tappable uploader. */
 class YoutubeVideoFragment : Fragment() {
-    private lateinit var scroll: View
+    private lateinit var scroll: NestedScrollView
     private lateinit var progress: View
     private lateinit var qualitySpinner: Spinner
+    private lateinit var commentsAdapter: YoutubeCommentAdapter
 
     private var video: YtVideo? = null
+    private var commentsLoading = false
+    private var commentsHasMore = false
 
     private val url: String get() = requireArguments().getString(ARG_URL) ?: ""
 
@@ -34,6 +40,20 @@ class YoutubeVideoFragment : Fragment() {
         progress = view.findViewById(R.id.youtube_video_progress)
         qualitySpinner = view.findViewById(R.id.youtube_video_quality)
         view.findViewById<TextView>(R.id.youtube_video_play).setOnClickListener { playInVlc() }
+
+        commentsAdapter = YoutubeCommentAdapter()
+        val commentsRv = view.findViewById<RecyclerView>(R.id.youtube_video_comments)
+        commentsRv.layoutManager = LinearLayoutManager(context)
+        commentsRv.adapter = commentsAdapter
+
+        // Load more comments as the page scrolls near the bottom.
+        scroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { v, _, scrollY, _, _ ->
+            val content = v.getChildAt(0) ?: return@OnScrollChangeListener
+            if (scrollY >= content.measuredHeight - v.measuredHeight - 400) {
+                loadMoreComments()
+            }
+        })
+
         load(view)
         return view
     }
@@ -50,6 +70,7 @@ class YoutubeVideoFragment : Fragment() {
                     bind(view, v)
                     progress.visibility = View.GONE
                     scroll.visibility = View.VISIBLE
+                    loadComments()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -81,6 +102,43 @@ class YoutubeVideoFragment : Fragment() {
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, v.qualities.map { it.label })
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         qualitySpinner.adapter = adapter
+    }
+
+    private fun loadComments() {
+        commentsLoading = true
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val page = YoutubeClient.comments(url)
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    commentsAdapter.setItems(page.items)
+                    commentsHasMore = page.hasMore
+                    commentsLoading = false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { if (isAdded) commentsLoading = false }
+            }
+        }
+    }
+
+    private fun loadMoreComments() {
+        if (commentsLoading || !commentsHasMore) return
+        commentsLoading = true
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val page = YoutubeClient.commentsMore()
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    commentsAdapter.addItems(page.items)
+                    commentsHasMore = page.hasMore
+                    commentsLoading = false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { if (isAdded) commentsLoading = false }
+            }
+        }
     }
 
     private fun playInVlc() {

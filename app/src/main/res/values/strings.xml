@@ -213,6 +213,8 @@
     <string name="youtube_sent">Sent to VLC</string>
     <string name="youtube_error">YouTube error</string>
     <string name="youtube_play">Play in VLC</string>
+    <string name="youtube_comments">Comments</string>
+    <string name="youtube_likes">&#128077; %d</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

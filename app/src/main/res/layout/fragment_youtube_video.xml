@@ -68,6 +68,21 @@
                 android:textColor="@color/white"
                 android:textSize="@dimen/normal_text" />
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/youtube_comments"
+                android:textColor="@color/white"
+                android:textSize="@dimen/head_text" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/youtube_video_comments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

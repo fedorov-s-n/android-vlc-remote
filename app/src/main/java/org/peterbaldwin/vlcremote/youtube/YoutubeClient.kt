@@ -8,6 +8,8 @@ import org.schabi.newpipe.extractor.channel.ChannelInfo
 import org.schabi.newpipe.extractor.channel.tabs.ChannelTabInfo
 import org.schabi.newpipe.extractor.channel.tabs.ChannelTabs
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem
+import org.schabi.newpipe.extractor.comments.CommentsInfo
+import org.schabi.newpipe.extractor.comments.CommentsInfoItem
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem
@@ -29,6 +31,12 @@ data class YtItem(
 
 /** One page of list items plus whether more can be loaded. */
 data class YtPage(val items: List<YtItem>, val hasMore: Boolean)
+
+/** A single comment. */
+data class YtComment(val author: String, val text: String, val likes: Int, val avatarUrl: String?)
+
+/** One page of comments plus whether more can be loaded. */
+data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
 
 /** A selectable quality for a video (label shown in the dropdown, url to play). */
 data class YtQuality(val label: String, val url: String)
@@ -58,6 +66,9 @@ object YoutubeClient {
 
     private var playlistUrl: String? = null
     private var playlistNextPage: Page? = null
+
+    private var commentsInfo: CommentsInfo? = null
+    private var commentsNextPage: Page? = null
 
     private fun ensureInit() {
         if (!initialized) {
@@ -147,6 +158,34 @@ object YoutubeClient {
         playlistNextPage = page.nextPage
         return YtPage(mapItems(page.items), page.hasNextPage())
     }
+
+    // ---- Comments ----
+
+    fun comments(videoUrl: String): YtCommentPage {
+        ensureInit()
+        val info = CommentsInfo.getInfo(ServiceList.YouTube, videoUrl)
+        commentsInfo = info
+        commentsNextPage = info.nextPage
+        return YtCommentPage(mapComments(info.relatedItems), info.hasNextPage())
+    }
+
+    fun commentsMore(): YtCommentPage {
+        val info = commentsInfo ?: return YtCommentPage(emptyList(), false)
+        val np = commentsNextPage ?: return YtCommentPage(emptyList(), false)
+        val page = CommentsInfo.getMoreItems(ServiceList.YouTube, info, np)
+        commentsNextPage = page.nextPage
+        return YtCommentPage(mapComments(page.items), page.hasNextPage())
+    }
+
+    private fun mapComments(items: List<CommentsInfoItem>): List<YtComment> =
+        items.map {
+            YtComment(
+                it.uploaderName ?: "",
+                it.commentText?.content ?: "",
+                it.likeCount,
+                it.uploaderAvatars.maxByOrNull { a -> a.width }?.url
+            )
+        }
 
     // ---- Helpers ----
 
