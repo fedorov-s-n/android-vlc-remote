@@ -234,6 +234,8 @@
     <string name="youtube_likes">&#128077; %d</string>
     <string name="youtube_view_replies">View %d replies</string>
     <string name="youtube_replies">View replies</string>
+    <string name="youtube_no_next">No next video</string>
+    <string name="youtube_no_prev">No previous video</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

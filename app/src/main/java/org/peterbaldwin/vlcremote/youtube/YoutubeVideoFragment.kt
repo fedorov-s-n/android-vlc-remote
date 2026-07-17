@@ -211,11 +211,23 @@ class YoutubeVideoFragment : Fragment() {
         // Subtitles: VLC won't fetch the remote URL itself, so download it to the VLC host
         // via the helper (same as the rezka tab) and addsubtitle the local file.
         val subPos = subtitleSpinner.selectedItemPosition // index 0 = "no subtitles"
-        if (subPos > 0) {
-            v.subtitles.getOrNull(subPos - 1)?.let { sub ->
-                val name = sub.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt"
-                SubtitleAttacher.attach(requireContext(), server, authority, sub.url, name)
-            }
+        val chosenSub = if (subPos > 0) v.subtitles.getOrNull(subPos - 1) else null
+        chosenSub?.let { sub ->
+            val name = sub.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt"
+            SubtitleAttacher.attach(requireContext(), server, authority, sub.url, name)
+        }
+
+        // If this video came from a playlist, remember the queue so the Now Playing
+        // next/previous buttons and autoplay step through it (like a rezka series).
+        val plUrls = arguments?.getStringArrayList(ARG_PL_URLS)
+        val plTitles = arguments?.getStringArrayList(ARG_PL_TITLES)
+        if (plUrls != null && plTitles != null && plUrls.isNotEmpty()) {
+            YoutubePlayback.start(
+                authority, plUrls, plTitles, requireArguments().getInt(ARG_PL_INDEX),
+                quality.label, chosenSub?.label
+            )
+        } else {
+            YoutubePlayback.clear()
         }
 
         Toast.makeText(requireContext(), getString(R.string.youtube_sent), Toast.LENGTH_SHORT).show()
@@ -223,10 +235,29 @@ class YoutubeVideoFragment : Fragment() {
 
     companion object {
         private const val ARG_URL = "url"
+        private const val ARG_PL_URLS = "pl_urls"
+        private const val ARG_PL_TITLES = "pl_titles"
+        private const val ARG_PL_INDEX = "pl_index"
 
         fun newInstance(url: String): YoutubeVideoFragment =
             YoutubeVideoFragment().apply {
                 arguments = Bundle().apply { putString(ARG_URL, url) }
+            }
+
+        /** Opens a video that belongs to a playlist, so next/previous can step through it. */
+        fun newInstance(
+            url: String,
+            playlistUrls: ArrayList<String>,
+            playlistTitles: ArrayList<String>,
+            index: Int
+        ): YoutubeVideoFragment =
+            YoutubeVideoFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_URL, url)
+                    putStringArrayList(ARG_PL_URLS, playlistUrls)
+                    putStringArrayList(ARG_PL_TITLES, playlistTitles)
+                    putInt(ARG_PL_INDEX, index)
+                }
             }
     }
 }

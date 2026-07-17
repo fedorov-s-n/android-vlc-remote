@@ -23,6 +23,9 @@ class YoutubeListFragment : Fragment() {
     private var isLoading = false
     private var hasMore = false
 
+    /** The playlist's videos in order, so playback can step through them (next/previous). */
+    private val streamItems = ArrayList<YtItem>()
+
     private val url: String get() = requireArguments().getString(ARG_URL) ?: ""
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -51,7 +54,12 @@ class YoutubeListFragment : Fragment() {
     private fun onItemClicked(item: YtItem) {
         if (item.kind == YtKind.STREAM) {
             YoutubeHistory.addRecent(requireContext(), item)
-            (parentFragment as? YoutubeFragment)?.open(YoutubeVideoFragment.newInstance(item.url))
+            val urls = ArrayList(streamItems.map { it.url })
+            val titles = ArrayList(streamItems.map { it.title })
+            val index = streamItems.indexOfFirst { it.url == item.url }.coerceAtLeast(0)
+            (parentFragment as? YoutubeFragment)?.open(
+                YoutubeVideoFragment.newInstance(item.url, urls, titles, index)
+            )
         }
     }
 
@@ -64,6 +72,8 @@ class YoutubeListFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     adapter.setItems(page.items)
+                    streamItems.clear()
+                    streamItems.addAll(page.items.filter { it.kind == YtKind.STREAM })
                     hasMore = page.hasMore
                     isLoading = false
                     progress.visibility = View.GONE
@@ -89,6 +99,7 @@ class YoutubeListFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     adapter.addItems(page.items)
+                    streamItems.addAll(page.items.filter { it.kind == YtKind.STREAM })
                     hasMore = page.hasMore
                     isLoading = false
                 }

@@ -54,11 +54,13 @@ object RezkaPlayback {
     /** Plays a movie stream; clears any series context. */
     fun playMovie(context: Context, authority: String, film: Film, stream: Stream, subtitle: Subtitle?) {
         clear()
+        org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear()
         doPlay(context, authority, stream.url, withQuality(baseTitle(film), stream.quality), subtitle)
     }
 
     /** Plays a series episode and remembers the context for next/previous navigation. */
     fun playSeries(context: Context, authority: String, film: Film, voice: Voice, season: String, episode: String, stream: Stream, subtitle: Subtitle?) {
+        org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear()
         this.film = film
         this.voice = voice
         this.season = season

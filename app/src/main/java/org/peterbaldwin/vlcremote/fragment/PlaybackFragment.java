@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback;
+import org.peterbaldwin.vlcremote.youtube.YoutubePlayback;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
@@ -133,6 +134,10 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                 if (!RezkaPlayback.playPrevious(getActivity())) {
                     Toast.makeText(getActivity(), R.string.rezka_no_prev_episode, Toast.LENGTH_SHORT).show();
                 }
+            } else if (YoutubePlayback.isActive()) {
+                if (!YoutubePlayback.playPrevious(getActivity())) {
+                    Toast.makeText(getActivity(), R.string.youtube_no_prev, Toast.LENGTH_SHORT).show();
+                }
             } else {
                 playlist().previous();
             }
@@ -140,6 +145,10 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
             if (RezkaPlayback.isActiveSeries()) {
                 if (!RezkaPlayback.playNext(getActivity())) {
                     Toast.makeText(getActivity(), R.string.rezka_no_next_episode, Toast.LENGTH_SHORT).show();
+                }
+            } else if (YoutubePlayback.isActive()) {
+                if (!YoutubePlayback.playNext(getActivity())) {
+                    Toast.makeText(getActivity(), R.string.youtube_no_next, Toast.LENGTH_SHORT).show();
                 }
             } else {
                 playlist().next();
@@ -232,10 +241,15 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         boolean autorun = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(getActivity()).getBoolean(ButtonsFragment.KEY_AUTORUN, false);
         if (status.isStopped()) {
-            if (autorun && RezkaPlayback.isActiveSeries() && !mAutorunFiredForThisEnd
+            if (autorun && !mAutorunFiredForThisEnd
                     && mAutorunPrevLength > 0 && mAutorunPrevTime >= mAutorunPrevLength - 5) {
-                mAutorunFiredForThisEnd = true;
-                RezkaPlayback.playNext(getActivity());
+                if (RezkaPlayback.isActiveSeries()) {
+                    mAutorunFiredForThisEnd = true;
+                    RezkaPlayback.playNext(getActivity());
+                } else if (YoutubePlayback.isActive()) {
+                    mAutorunFiredForThisEnd = true;
+                    YoutubePlayback.playNext(getActivity());
+                }
             }
         } else {
             mAutorunFiredForThisEnd = false;

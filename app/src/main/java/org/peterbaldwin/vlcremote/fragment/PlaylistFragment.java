@@ -268,6 +268,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
 
     private void selectItem(PlaylistItem item) {
         com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
+            org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear();
         getMediaServer().status().command.playback.play(item.getId());
     }
 
