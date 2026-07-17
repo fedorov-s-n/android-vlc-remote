@@ -175,7 +175,6 @@
     <string name="tab_dvd">DVD</string>
 
     <!-- Label for rezka.ag navigation tab -->
-    <string name="tab_rezka">rezka.ag</string>
     <string name="tab_hdrezka">HDrezka</string>
     <string name="sel_voice">Озвучка</string>
     <string name="sel_season">Сезон</string>
@@ -206,7 +205,6 @@
     <!-- Used to denote tablet only layout item -->
     <string name="layout_tablet">tablet</string>
 
-    <string name="web_view_watch">Watch</string>
 
 
     <string name="runtime">Время: %1$s</string>

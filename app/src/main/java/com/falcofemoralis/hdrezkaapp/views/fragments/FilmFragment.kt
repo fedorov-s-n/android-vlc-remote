@@ -30,7 +30,6 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.InputMethodManager
 import android.webkit.JavascriptInterface
-import android.webkit.WebView
 import android.widget.*
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,11 +42,7 @@ import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import org.peterbaldwin.client.android.vlcremote.R
-import com.falcofemoralis.hdrezkaapp.clients.PlayerChromeClient
-import com.falcofemoralis.hdrezkaapp.clients.PlayerJsInterface
-import com.falcofemoralis.hdrezkaapp.clients.PlayerWebViewClient
 import com.falcofemoralis.hdrezkaapp.constants.DeviceType
 import com.falcofemoralis.hdrezkaapp.constants.UpdateItem
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection
@@ -59,7 +54,6 @@ import com.falcofemoralis.hdrezkaapp.utils.*
 import com.falcofemoralis.hdrezkaapp.utils.Highlighter.zoom
 import com.falcofemoralis.hdrezkaapp.views.adapters.CommentsRecyclerViewAdapter
 import com.falcofemoralis.hdrezkaapp.views.elements.CommentEditor
-import com.falcofemoralis.hdrezkaapp.views.tv.player.PlayerActivity
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.FilmView
 import com.github.aakira.expandablelayout.ExpandableLinearLayout
 import com.squareup.picasso.Callback
@@ -103,10 +97,6 @@ class FilmFragment : Fragment(), FilmView {
     }
 
     override fun onDestroy() {
-        if (isWebviewInstalled) {
-            playerView?.destroy()
-        }
-
         if (SettingsData.isPlayer == false) {
             activity?.window?.clearFlags(FLAG_KEEP_SCREEN_ON)
 
@@ -118,38 +108,8 @@ class FilmFragment : Fragment(), FilmView {
                 }
             }
         }
-        PlayerJsInterface.notifyanager?.cancel(0)
 
         super.onDestroy()
-    }
-
-    override fun onResume() {
-        if (isWebviewInstalled) {
-            presenter = filmPresenter
-        }
-        if (isFullscreen) {
-            requireActivity().window.decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN)
-        }
-        super.onResume()
-    }
-
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (hidden) {
-            //do when hidden
-            PlayerJsInterface.stop()
-            PlayerJsInterface.notifyanager?.cancel(0)
-        } else {
-            //do when show
-            presenter = filmPresenter
-            isFullscreen = false
-        }
-    }
-
-    companion object {
-        var playerView: WebView? = null
-        var presenter: FilmPresenter? = null
-        var isFullscreen: Boolean = false
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -424,10 +384,6 @@ class FilmFragment : Fragment(), FilmView {
         // Prefer English subtitles when available.
         val subIdx = subItems.indexOfFirst { it.contains("english", true) }
         if (subIdx > 0) subtitleSpinner.setSelection(subIdx)
-    }
-
-    override fun setPlayer(link: String) {
-        // Native player removed; selectors above expose the stream choices instead.
     }
 
     override fun setFilmBaseData(film: Film) {
@@ -960,305 +916,6 @@ class FilmFragment : Fragment(), FilmView {
 
     override fun setHRrating(rating: Float, isActive: Boolean) {
         // Rating stars removed from the film page.
-    }
-
-    override fun showTranslations(translations: ArrayList<Voice>, isDownload: Boolean, isMovie: Boolean) {
-        if (isMovie) {
-            if (translations.size > 1) {
-                val builder = DialogManager.getDialog(requireContext(), R.string.translation)
-                val sv: ScrollView = layoutInflater.inflate(R.layout.inflate_translations, null) as ScrollView
-                val layout: LinearLayout = sv.getChildAt(0) as LinearLayout
-                var activeNameTextView: TextView? = null
-
-                for (translation in translations) {
-                    val textView: TextView = layoutInflater.inflate(R.layout.inflate_translation_item, null) as TextView
-                    translation.name?.let { textView.text = it }
-                    textView.setOnClickListener {
-                        filmPresenter.getAndOpenFilmStream(translation, isDownload)
-
-                        if (activeNameTextView != null && !isDownload && UserData.isLoggedIn == true) {
-                            activeNameTextView?.setTextColor(requireContext().getColor(R.color.text_color))
-                            activeNameTextView = textView
-                            activeNameTextView?.setTextColor(requireContext().getColor(R.color.primary_red))
-
-                            filmPresenter.film.lastVoiceId = translation.id
-                        }
-                    }
-
-                    if (filmPresenter.film.lastVoiceId == translation.id && UserData.isLoggedIn == true) {
-                        activeNameTextView = textView
-                    }
-
-                    layout.addView(textView)
-                }
-
-                if (activeNameTextView != null && !isDownload) {
-                    activeNameTextView?.setTextColor(requireContext().getColor(R.color.primary_red))
-                    activeNameTextView?.requestFocus()
-                }
-
-                builder.setView(sv)
-                builder.create().show()
-            } else if (translations.size == 1) {
-                filmPresenter.getAndOpenFilmStream(translations[0], isDownload)
-            } else {
-                Toast.makeText(requireContext(), getString(R.string.error_empty), Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            val transView: LinearLayout = layoutInflater.inflate(R.layout.dialog_translation_series, null) as LinearLayout
-            val translationsSpinner: SmartMaterialSpinner<String> = transView.findViewById(R.id.translations_spinner)
-            var selectedTranslation = 0
-            var d: AlertDialog? = null
-            val translationProgressBar = transView.findViewById<ProgressBar>(R.id.translations_progress)
-            val container = transView.findViewById<LinearLayout>(R.id.translations_container)
-
-            fun showTranslationsSeries(seasons: LinkedHashMap<String, ArrayList<String>>) {
-                var activeNameTextView: TextView? = null
-
-                for ((season, episodes) in seasons) {
-                    // костыль т.к .collapsed() не срабатывает
-                    val layout: LinearLayout = if (filmPresenter.film.lastSeason == season && !isDownload) {
-                        layoutInflater.inflate(R.layout.inflate_season_layout_expanded, null) as LinearLayout
-                    } else {
-                        layoutInflater.inflate(R.layout.inflate_season_layout, null) as LinearLayout
-                    }
-
-                    val expandedList: ExpandableLinearLayout = layout.findViewById(R.id.inflate_season_layout_list)
-
-                    layout.findViewById<TextView>(R.id.inflate_season_layout_header).text = "Сезон ${season}"
-                    layout.findViewById<LinearLayout>(R.id.inflate_season_layout_button).setOnClickListener {
-                        expandedList.toggle()
-                    }
-
-                    for (episode in episodes) {
-                        val nameTextView = layoutInflater.inflate(R.layout.inflate_season_item, null) as TextView
-                        nameTextView.text = "Эпизод ${episode}"
-                        nameTextView.setOnClickListener {
-                            filmPresenter.getAndOpenEpisodeStream(translations[selectedTranslation], season, episode, isDownload)
-
-                            if (activeNameTextView != null && !isDownload && UserData.isLoggedIn == true) {
-                                activeNameTextView?.setTextColor(requireContext().getColor(R.color.text_color))
-                                activeNameTextView = nameTextView
-                                activeNameTextView?.setTextColor(requireContext().getColor(R.color.primary_red))
-
-                                filmPresenter.film.lastVoiceId = translations[selectedTranslation].id
-                                filmPresenter.film.lastSeason = season
-                                filmPresenter.film.lastEpisode = episode
-                            }
-                        }
-
-                        if (filmPresenter.film.lastSeason == season && filmPresenter.film.lastEpisode == episode && filmPresenter.film.lastVoiceId == translations[selectedTranslation].id && UserData.isLoggedIn == true) {
-                            activeNameTextView = nameTextView
-                        }
-
-                        expandedList.addView(nameTextView)
-                    }
-                    container.addView(layout)
-                }
-
-                translationProgressBar.visibility = View.GONE
-
-                val displayMetrics = DisplayMetrics()
-                if (Build.VERSION.SDK_INT >= 30) {
-                    requireActivity().display?.apply {
-                        getRealMetrics(displayMetrics)
-                    }
-                } else {
-                    // getMetrics() method was deprecated in api level 30
-                    requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-                }
-
-                val dialogSize: Float =
-                    if (seasons.size >= 10) 1f
-                    else if (seasons.size >= 5) 0.8f
-                    else if (seasons.size >= 1) 0.7f
-                    else 1f
-
-                val displayHeight = displayMetrics.heightPixels
-                val layoutParams = WindowManager.LayoutParams()
-                layoutParams.copyFrom(d?.window?.attributes)
-                val dialogWindowHeight = (displayHeight * dialogSize).toInt()
-                layoutParams.height = dialogWindowHeight
-                d?.window?.attributes = layoutParams
-
-                if (activeNameTextView != null && !isDownload) {
-                    activeNameTextView?.setTextColor(requireContext().getColor(R.color.primary_red))
-                    activeNameTextView?.isFocusableInTouchMode = true
-                    activeNameTextView?.requestFocus()
-                }
-
-                // end func
-            }
-
-            if (translations.size > 1) {
-                val voicesNames: ArrayList<String> = ArrayList()
-                for ((i, translation) in translations.withIndex()) {
-                    translation.name?.let {
-                        voicesNames.add(it)
-
-                        if (translation.id == filmPresenter.film.lastVoiceId) {
-                            selectedTranslation = i
-                        }
-                    }
-                }
-                translationsSpinner.item = voicesNames
-                translationsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onNothingSelected(parent: AdapterView<*>?) {
-                    }
-
-                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                        selectedTranslation = position
-                        container.removeAllViews()
-                        translationProgressBar.visibility = View.VISIBLE
-                        filmPresenter.initTranslationsSeries(translations[position], ::showTranslationsSeries)
-                    }
-                }
-                translationsSpinner.setSelection(selectedTranslation)
-            } else if (translations.size == 1) {
-                translationsSpinner.visibility = View.GONE
-                translationProgressBar.visibility = View.GONE
-                filmPresenter.initTranslationsSeries(translations[0], ::showTranslationsSeries)
-            } else {
-                Toast.makeText(requireContext(), getString(R.string.error_empty), Toast.LENGTH_SHORT).show()
-            }
-
-            val builder = DialogManager.getDialog(requireContext(), null)
-            builder.setView(transView)
-            d = builder.create()
-            d.show()
-        }
-    }
-
-    override fun showStreams(streams: ArrayList<Stream>, filmTitle: String, title: String, isDownload: Boolean, translation: Voice) {
-        val builder = DialogManager.getDialog(requireContext(), R.string.choose_quality)
-        val qualities: ArrayList<String> = ArrayList()
-        if (streams.size > 0) {
-            for (stream in streams) {
-                qualities.add(stream.quality)
-            }
-
-            builder.setAdapter(ArrayAdapter(requireContext(), R.layout.simple_list_item, qualities)) { dialog, which ->
-                openStream(streams[which], filmTitle, title, isDownload, translation)
-            }
-            builder.show()
-        } else {
-            Toast.makeText(requireContext(), R.string.blocked_in_region, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun openStream(stream: Stream, filmTitle: String, title: String, isDownload: Boolean, translation: Voice) {
-        val url = stream.url.replace("#EXT-X-STREAM-INF:", "")
-
-        fun initStream(subtitle: Subtitle?) {
-            if (isDownload) {
-                val manager: DownloadManager? = requireActivity().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager?
-                if (manager != null) {
-                    val parseUri = Uri.parse(url)
-                    val fileName = StringBuilder()
-                    fileName.append(filmTitle)
-                    if (title.isNotEmpty()) {
-                        fileName.append(" $title")
-                    }
-
-                    if (stream.quality.isNotEmpty()) {
-                        fileName.append(" ${stream.quality}")
-                    }
-
-                    fileName.append(" ${parseUri.lastPathSegment}")
-
-                    if (SettingsData.isExternalDownload == true) {
-                        val sharingIntent = Intent(Intent.ACTION_SEND)
-                        sharingIntent.type = "text/plain"
-                        val body: String = getString(R.string.share_body, fileName.toString(), parseUri)
-                        sharingIntent.putExtra(Intent.EXTRA_TEXT, body)
-                        startActivity(sharingIntent)
-                    } else {
-                        val request = DownloadManager.Request(parseUri)
-                        request.setTitle(fileName)
-                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-                        request.allowScanningByMediaScanner()
-                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName.toString())
-                        manager.enqueue(request)
-                        Toast.makeText(requireContext(), getString(R.string.download_started), Toast.LENGTH_SHORT).show()
-                    }
-
-                    if (subtitle != null) {
-                        downloadSubtitle(subtitle.url, "$fileName.vtt")
-                    }
-                } else {
-                    Toast.makeText(requireContext(), getString(R.string.no_manager), Toast.LENGTH_LONG).show()
-                }
-            } else {
-                if (UserData.isLoggedIn == true) {
-                    filmPresenter.updateWatchLater(translation)
-                }
-
-                if (SettingsData.isPlayer == false && SettingsData.deviceType == DeviceType.TV) {
-                    val intent = Intent(requireContext(), PlayerActivity::class.java)
-                    intent.putExtra(PlayerActivity.FILM, filmPresenter.film)
-                    intent.putExtra(PlayerActivity.STREAM, stream)
-                    intent.putExtra(PlayerActivity.TRANSLATION, translation)
-                    if (subtitle != null) {
-                        intent.putExtra(PlayerActivity.SUBTITLE, subtitle)
-                    }
-                    startActivity(intent)
-                } else {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    val newFilmTitle: String
-
-                    if (translation.seasons != null && translation.seasons!!.size > 0) {
-                        newFilmTitle = "Сезон ${translation.selectedEpisode?.first} - Эпизод ${translation.selectedEpisode?.second} $filmTitle"
-                    } else {
-                        newFilmTitle = filmTitle
-                    }
-
-                    intent.setDataAndType(Uri.parse(url), "video/*")
-                    intent.putExtra("title", newFilmTitle)
-
-                    if (subtitle != null && SettingsData.isSubtitlesDownload == true) {
-                        val filename = newFilmTitle.replace(" ", "").replace("/", "") + ".vtt"
-                        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/$filename"
-
-                        downloadSubtitle(subtitle.url, filename)
-
-                        intent.putExtra("subtitles_location", path)
-                        val subs: Array<Uri> = arrayOf(Uri.parse(subtitle.url))
-                        intent.putExtra("subs", subs)
-                        val subsnames: Array<String> = arrayOf(subtitle.lang)
-                        intent.putExtra("subs.name", subsnames)
-                        intent.putExtra("subs.filename", subsnames)
-                    }
-
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-                    /*    if (SettingsData.selectedPlayerPackage != null) {
-                            intent.setPackage(SettingsData.selectedPlayerPackage)
-                        }*/
-
-                    try {
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(requireContext(), getString(R.string.no_player), Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
-
-        val builder = DialogManager.getDialog(requireContext(), R.string.title_select_caption)
-        val subtitlesNames: ArrayList<String> = ArrayList()
-
-        if (translation.subtitles != null && translation.subtitles!!.size > 0 && SettingsData.isSelectSubtitle == true) {
-            for (subtitle in translation.subtitles!!) {
-                subtitlesNames.add(subtitle.lang)
-            }
-
-            builder.setAdapter(ArrayAdapter(requireContext(), R.layout.simple_list_item, subtitlesNames)) { dialog, which ->
-                initStream(translation.subtitles!![which])
-            }
-            builder.create().show()
-        } else {
-            initStream(null)
-        }
     }
 
     override fun hideActors() {

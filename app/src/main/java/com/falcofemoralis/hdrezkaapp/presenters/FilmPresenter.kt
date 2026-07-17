@@ -116,10 +116,6 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
         }
     }
 
-    fun initPlayer() {
-        film.filmLink?.let { filmView.setPlayer(it) }
-    }
-
     fun setBookmark(bookmarkId: String) {
         film.filmId?.let {
             GlobalScope.launch {
@@ -237,69 +233,6 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
         }
     }
 
-    fun updateRating(rating: Float) {
-        GlobalScope.launch {
-            try {
-                FilmModel.postRating(film, rating)
-
-                withContext(Dispatchers.Main) {
-                    film.ratingHR?.let { filmView.setHRrating(it.toFloat(), film.isHRratingActive) }
-                    filmView.setFilmRatings(film)
-                }
-            } catch (e: Exception) {
-                catchException(e, filmView)
-            }
-        }
-    }
-
-    fun showTranslations(isDownload: Boolean) {
-        film.translations?.let { film.isMovieTranslation?.let { it1 -> filmView.showTranslations(it, isDownload, it1) } }
-    }
-
-    fun initStreams(translation: Voice, isDownload: Boolean, vararg additionalInfo: String) {
-        GlobalScope.launch {
-            try {
-                val additionalTitle = StringBuilder()
-                translation.name?.let {
-                    additionalTitle.append(it)
-                }
-                for (info in additionalInfo) {
-                    if (additionalTitle.isNotEmpty()) additionalTitle.append(" ")
-                    additionalTitle.append("$info")
-                }
-
-                withContext(Dispatchers.Main) {
-                    if (translation.streams?.size ?: 0 > 0) {
-                        film.title?.let {
-                            if (SettingsData.isMaxQuality == true) {
-                                filmView.openStream(translation.streams!![translation.streams!!.size - 1], it, additionalTitle.toString(), isDownload, translation)
-                            } else if (SettingsData.defaultQuality != null) {
-                                var isDefaultQualityFound = false
-
-                                for (stream in translation.streams!!) {
-                                    if (stream.quality == SettingsData.defaultQuality) {
-                                        filmView.openStream(stream, it, additionalTitle.toString(), isDownload, translation)
-                                        isDefaultQualityFound = true
-                                    }
-                                }
-
-                                if (!isDefaultQualityFound) {
-                                    filmView.openStream(translation.streams!![translation.streams!!.size - 1], it, additionalTitle.toString(), isDownload, translation)
-                                }
-                            } else {
-                                filmView.showStreams(translation.streams!!, it, additionalTitle.toString(), isDownload, translation)
-                            }
-                        }
-                    } else {
-                        filmView.showMsg(IConnection.ErrorType.EMPTY)
-                    }
-                }
-            } catch (e: Exception) {
-                catchException(e, filmView)
-            }
-        }
-    }
-
     fun initTranslationsSeries(translation: Voice, callback: (seasons: LinkedHashMap<String, ArrayList<String>>) -> Unit) {
         GlobalScope.launch {
             try {
@@ -312,36 +245,6 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                         translation.seasons?.let { it1 -> callback(it1) }
                     }
                 }
-            } catch (e: Exception) {
-                catchException(e, filmView)
-            }
-        }
-    }
-
-    fun getAndOpenEpisodeStream(translation: Voice, season: String, episode: String, isDownload: Boolean) {
-        GlobalScope.launch {
-            try {
-                film.filmId?.let {
-                    translation.selectedEpisode = Pair(season, episode)
-                    FilmModel.getStreamsByEpisodeId(translation, it, season, episode)
-                    initStreams(translation, isDownload, "Сезон $season -", "Эпизод $episode")
-                }
-            } catch (e: Exception) {
-                catchException(e, filmView)
-            }
-        }
-    }
-
-    fun getAndOpenFilmStream(translation: Voice, isDownload: Boolean) {
-        GlobalScope.launch {
-            try {
-                if (translation.id != null) {
-                    if (translation.streams == null) {
-                        film.filmId?.let { FilmModel.getStreamsByTranslationId(it, translation) }
-                    }
-                }
-
-                initStreams(translation, isDownload)
             } catch (e: Exception) {
                 catchException(e, filmView)
             }
@@ -377,16 +280,4 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
         }
     }
 
-    fun updateWatchLater(translation: Voice) {
-        GlobalScope.launch {
-            try {
-                film.filmId?.let {
-                    FilmModel.saveWatch(it, translation)
-                }
-                filmView.updateWatchPager()
-            } catch (e: Exception) {
-                // catchException(e, filmView)
-            }
-        }
-    }
 }

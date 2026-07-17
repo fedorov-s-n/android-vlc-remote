@@ -21,8 +21,6 @@ interface FilmView : IConnection, CommentEditor.ICommentEditor {
 
     fun setFullSizeImage(posterPath: String)
 
-    fun setPlayer(link: String)
-
     fun setSchedule(schedule: ArrayList<Pair<String, ArrayList<Schedule>>>)
 
     fun setCollection(collection: ArrayList<Film>)
@@ -50,12 +48,6 @@ interface FilmView : IConnection, CommentEditor.ICommentEditor {
     fun updateBookmarksFilmsPager()
 
     fun setHRrating(rating: Float, isActive: Boolean)
-
-    fun showTranslations(translations: ArrayList<Voice>, isDownload: Boolean, isMovie: Boolean)
-
-    fun showStreams(streams: ArrayList<Stream>, filmTitle: String, title: String, isDownload: Boolean, translation: Voice)
-
-    fun openStream(stream: Stream, filmTitle: String, title: String, isDownload: Boolean, translation: Voice)
 
     fun hideActors()
 

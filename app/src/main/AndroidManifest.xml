@@ -342,16 +342,6 @@
         </receiver>
 
 
-        <receiver
-            android:name="com.falcofemoralis.hdrezkaapp.broadcasts.NotificationListener"
-            android:enabled="true" />
-
-
-        <activity
-            android:name="com.falcofemoralis.hdrezkaapp.views.tv.player.PlayerActivity"
-            android:exported="false"
-            android:theme="@style/ATVTheme" />
-
     </application>
 
 </manifest>

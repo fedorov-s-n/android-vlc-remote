@@ -72,6 +72,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
     private BroadcastReceiver mStatusReceiver;
 
     private String mCurrent;
+    private String mCurrentTitle;
     
     private String mSearchQuery = "";
     
@@ -337,9 +338,13 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
 
     void onStatusChanged(Status status) {
         String filePath = status.getTrack().getName() == null ? status.getTrack().getTitle() : status.getTrack().getName();
-        if (!TextUtils.equals(filePath, mCurrent)) {
-            // Reload the playlist and scroll to the new current track
+        String title = status.getTrack().getTitle();
+        // Reload when the current track changes, or when its meta title arrives/changes
+        // later (VLC often reports the title a couple of seconds after playback starts),
+        // so the playlist shows the full name without a manual refresh.
+        if (!TextUtils.equals(filePath, mCurrent) || !TextUtils.equals(title, mCurrentTitle)) {
             mCurrent = filePath;
+            mCurrentTitle = title;
             reload();
         }
     }

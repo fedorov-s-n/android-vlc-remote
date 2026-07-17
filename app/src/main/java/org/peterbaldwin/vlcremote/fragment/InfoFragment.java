@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.text.TextUtils;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +45,7 @@ public class InfoFragment extends Fragment {
     private TextView mAlbum;
     private TextView mTrack;
     private String mCurrentFileName;
+    private String mCurrentTitle;
 
     public InfoFragment() {
         mMediaParser = new MediaParser();
@@ -56,6 +58,7 @@ public class InfoFragment extends Fragment {
         mAlbum = (TextView) view.findViewById(R.id.album);
         mTrack = (TextView) view.findViewById(R.id.track);
         mCurrentFileName = null;
+        mCurrentTitle = null;
         return view;
     }
 
@@ -76,24 +79,30 @@ public class InfoFragment extends Fragment {
     }
 
     public void onStatusChanged(Context context, Status status) {
-        if(status.getTrack().getName() == null) {
-            if(status.getTrack().getTitle() == null) {
+        String name = status.getTrack().getName();
+        String title = status.getTrack().getTitle();
+        if(name == null) {
+            if(title == null) {
                 if(mCurrentFileName != null) {
                     clearMediaDisplayInfo();
                     mCurrentFileName = null;
+                    mCurrentTitle = null;
                 }
                 return;
             }
-            if(status.getTrack().getTitle().equals(mCurrentFileName)) {
+            // Re-render when the name is unchanged but the meta title arrives/changes
+            // (VLC often reports the title only a couple of seconds after playback starts).
+            if(title.equals(mCurrentFileName) && TextUtils.equals(title, mCurrentTitle)) {
                 return;
             }
-            mCurrentFileName = status.getTrack().getTitle();
+            mCurrentFileName = title;
         } else {
-            if(status.getTrack().getName().equals(mCurrentFileName)) {
+            if(name.equals(mCurrentFileName) && TextUtils.equals(title, mCurrentTitle)) {
                 return;
             }
-            mCurrentFileName = status.getTrack().getName();
+            mCurrentFileName = name;
         }
+        mCurrentTitle = title;
         // it is possible for a status change to be sent before vlc has fully read
         // the file metadata and not output any stream information.
         if(!status.getTrack().containsStream() || status.getTrack().hasVideoStream()) {
