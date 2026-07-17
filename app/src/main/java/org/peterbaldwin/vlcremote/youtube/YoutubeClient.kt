@@ -295,9 +295,11 @@ object YoutubeClient {
                 is ChannelInfoItem -> result.add(
                     YtItem(YtKind.CHANNEL, item.name ?: "", item.url ?: "", "Channel", thumb, -1)
                 )
-                is PlaylistInfoItem -> result.add(
-                    YtItem(YtKind.PLAYLIST, item.name ?: "", item.url ?: "", "Playlist", thumb, -1)
-                )
+                is PlaylistInfoItem -> {
+                    val count = item.streamCount
+                    val sub = if (count >= 0) "Playlist • $count videos" else "Playlist"
+                    result.add(YtItem(YtKind.PLAYLIST, item.name ?: "", item.url ?: "", sub, thumb, -1))
+                }
                 else -> {}
             }
         }

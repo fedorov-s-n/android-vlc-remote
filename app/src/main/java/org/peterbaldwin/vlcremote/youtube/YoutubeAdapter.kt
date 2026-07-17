@@ -36,6 +36,12 @@ class YoutubeAdapter(private val onClick: (YtItem) -> Unit) : RecyclerView.Adapt
         val item = items[position]
         holder.title.text = item.title
         holder.subtitle.text = item.subtitle
+        if (item.duration > 0) {
+            holder.duration.visibility = View.VISIBLE
+            holder.duration.text = formatDuration(item.duration)
+        } else {
+            holder.duration.visibility = View.GONE
+        }
         val url = item.thumbnailUrl
         if (url.isNullOrEmpty()) {
             holder.thumb.setImageDrawable(null)
@@ -45,9 +51,17 @@ class YoutubeAdapter(private val onClick: (YtItem) -> Unit) : RecyclerView.Adapt
         holder.itemView.setOnClickListener { onClick(item) }
     }
 
+    private fun formatDuration(seconds: Long): String {
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
+        val s = seconds % 60
+        return if (h > 0) String.format("%d:%02d:%02d", h, m, s) else String.format("%d:%02d", m, s)
+    }
+
     class VH(v: View) : RecyclerView.ViewHolder(v) {
         val thumb: ImageView = v.findViewById(R.id.youtube_item_thumb)
         val title: TextView = v.findViewById(R.id.youtube_item_title)
         val subtitle: TextView = v.findViewById(R.id.youtube_item_subtitle)
+        val duration: TextView = v.findViewById(R.id.youtube_item_duration)
     }
 }

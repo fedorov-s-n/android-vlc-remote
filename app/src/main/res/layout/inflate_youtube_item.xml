@@ -9,14 +9,35 @@
     android:orientation="horizontal"
     android:padding="8dp">
 
-    <ImageView
-        android:id="@+id/youtube_item_thumb"
+    <FrameLayout
         android:layout_width="120dp"
         android:layout_height="68dp"
-        android:layout_marginEnd="12dp"
-        android:background="#20FFFFFF"
-        android:contentDescription="@null"
-        android:scaleType="centerCrop" />
+        android:layout_marginEnd="12dp">
+
+        <ImageView
+            android:id="@+id/youtube_item_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#20FFFFFF"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/youtube_item_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="4dp"
+            android:background="#CC000000"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"

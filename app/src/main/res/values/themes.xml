@@ -3,5 +3,6 @@
     <style
         name="Theme"
         parent="android:Theme.NoTitleBar">
+        <item name="android:windowBackground">@color/background</item>
     </style>
 </resources>
