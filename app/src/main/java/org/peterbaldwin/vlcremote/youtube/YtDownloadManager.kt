@@ -40,6 +40,7 @@ object YtDownloadManager {
     private var fastPolls = 0
     private var prevBytes = 0L
     private var prevMs = 0L
+    private var downloadedSec = 0L
 
     /** Text for the Now Playing tab; null when nothing to show. Persists until [cancel]. */
     @Volatile
@@ -56,6 +57,10 @@ object YtDownloadManager {
     @JvmStatic
     fun totalDurationSec(): Long = if (isActive()) durationSec else 0
 
+    /** Seconds of video downloaded so far — for the seekbar's buffered (secondary) region. */
+    @JvmStatic
+    fun downloadedSec(): Long = if (isActive()) downloadedSec else 0
+
     /**
      * Starts a download+play job for [ytUrl]. Cancels any previous job first. [subtitleUrl] is
      * attached once playback begins (may be null).
@@ -68,6 +73,7 @@ object YtDownloadManager {
         durationSec: Long,
         title: String?,
         channel: String?,
+        album: String?,
         authority: String,
         subtitleUrl: String?,
         subtitleName: String?
@@ -84,6 +90,7 @@ object YtDownloadManager {
         fastPolls = 0
         prevBytes = 0L
         prevMs = 0L
+        downloadedSec = 0L
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
         if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
@@ -98,7 +105,7 @@ object YtDownloadManager {
         val h = host ?: return
         val p = port
         GlobalScope.launch(Dispatchers.IO) {
-            val id = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "")
+            val id = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "")
             withContext(Dispatchers.Main) {
                 if (id == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"
@@ -126,6 +133,7 @@ object YtDownloadManager {
                         prevMs = st.ms
                         fastPolls = if (speed >= RATE_MIN) fastPolls + 1 else 0
                         val dlSec = if (st.total > 0) (st.bytes.toDouble() / st.total * durationSec).toLong() else 0
+                        downloadedSec = dlSec
                         statusText = String.format(
                             Locale.US, "Downloading… %s/%s • %.1fs/s",
                             hms(dlSec), hms(durationSec), speed
@@ -134,6 +142,7 @@ object YtDownloadManager {
                     }
                     st.done -> {
                         play(st.path)
+                        downloadedSec = durationSec
                         statusText = "Downloaded • " + sizeMb(st.total) + " • " + clock(st.ms)
                         reschedule = false
                     }

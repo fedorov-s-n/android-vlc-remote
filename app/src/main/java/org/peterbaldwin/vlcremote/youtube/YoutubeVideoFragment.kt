@@ -209,35 +209,27 @@ class YoutubeVideoFragment : Fragment() {
         val titleWithQuality = if (quality.label.isNotBlank()) "${v.title} [${quality.label}]" else v.title
         YtDownloadManager.start(
             requireContext(), url, quality.url, audioUrl, v.durationSec,
-            titleWithQuality, v.uploader, authority, chosenSub?.url, subName
+            titleWithQuality, v.uploader, arguments?.getString(ARG_PL_NAME),
+            authority, chosenSub?.url, subName
         )
         Toast.makeText(requireContext(), getString(R.string.youtube_downloading), Toast.LENGTH_SHORT).show()
     }
 
     companion object {
         private const val ARG_URL = "url"
-        private const val ARG_PL_URLS = "pl_urls"
-        private const val ARG_PL_TITLES = "pl_titles"
-        private const val ARG_PL_INDEX = "pl_index"
+        private const val ARG_PL_NAME = "pl_name"
 
         fun newInstance(url: String): YoutubeVideoFragment =
             YoutubeVideoFragment().apply {
                 arguments = Bundle().apply { putString(ARG_URL, url) }
             }
 
-        /** Opens a video that belongs to a playlist, so next/previous can step through it. */
-        fun newInstance(
-            url: String,
-            playlistUrls: ArrayList<String>,
-            playlistTitles: ArrayList<String>,
-            index: Int
-        ): YoutubeVideoFragment =
+        /** Opens a video that belongs to a playlist; [playlistName] is used as the album tag. */
+        fun newInstance(url: String, playlistName: String?): YoutubeVideoFragment =
             YoutubeVideoFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_URL, url)
-                    putStringArrayList(ARG_PL_URLS, playlistUrls)
-                    putStringArrayList(ARG_PL_TITLES, playlistTitles)
-                    putInt(ARG_PL_INDEX, index)
+                    putString(ARG_PL_NAME, playlistName)
                 }
             }
     }

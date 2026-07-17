@@ -129,7 +129,7 @@ def _active_count() -> int:
     return sum(1 for j in _mux_jobs.values() if j["proc"].poll() is None)
 
 
-def start_mux(v: str, a: str, title: str = "", artist: str = ""):
+def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""):
     """Returns (job_id, error). error is a string if the job could not be started."""
     jid = _job_id(v, a)
     with _mux_lock:
@@ -154,6 +154,8 @@ def start_mux(v: str, a: str, title: str = "", artist: str = ""):
             cmd += ["-metadata", "title=" + title]
         if artist:
             cmd += ["-metadata", "artist=" + artist]
+        if album:
+            cmd += ["-metadata", "album=" + album]
         cmd += ["-f", "matroska", path]
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _mux_jobs[jid] = {"path": path, "proc": proc,
@@ -270,7 +272,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             title = qs.get("t", [""])[0] or ""
             artist = qs.get("c", [""])[0] or ""
-            jid, err = start_mux(v, a, title, artist)
+            album = qs.get("al", [""])[0] or ""
+            jid, err = start_mux(v, a, title, artist, album)
             if err:
                 self._send(503, "ERROR: " + err + "\n")
             else:

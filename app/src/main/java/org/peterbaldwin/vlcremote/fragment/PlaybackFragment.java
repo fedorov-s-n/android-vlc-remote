@@ -252,6 +252,14 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         }
         mSeekPosition.setMax(length);
 
+        // Show the downloaded region as the seekbar's buffered (secondary) fill for a YouTube
+        // download; keep it clear for rezka / plain file playback.
+        if (ytDuration > 0) {
+            mSeekPosition.setSecondaryProgress((int) org.peterbaldwin.vlcremote.youtube.YtDownloadManager.downloadedSec());
+        } else {
+            mSeekPosition.setSecondaryProgress(0);
+        }
+
         // Call setKeyProgressIncrement after calling setMax because the
         // implementation of setMax will automatically adjust the increment.
         mSeekPosition.setKeyProgressIncrement(3);
