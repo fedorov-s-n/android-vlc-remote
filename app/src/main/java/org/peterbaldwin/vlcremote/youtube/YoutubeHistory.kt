@@ -18,7 +18,8 @@ object YoutubeHistory {
         val title: String,
         val url: String,
         val subtitle: String,
-        val thumbnailUrl: String?
+        val thumbnailUrl: String?,
+        val duration: Long = 0
     )
 
     private fun prefs(context: Context) = PreferenceManager.getDefaultSharedPreferences(context)
@@ -38,14 +39,14 @@ object YoutubeHistory {
     /** Recently opened items, newest first, as ready-to-display rows. */
     fun getRecent(context: Context): List<YtItem> = entries(context).mapNotNull {
         val kind = try { YtKind.valueOf(it.kind) } catch (e: Exception) { return@mapNotNull null }
-        YtItem(kind, it.title, it.url, it.subtitle, it.thumbnailUrl, -1)
+        YtItem(kind, it.title, it.url, it.subtitle, it.thumbnailUrl, it.duration)
     }
 
     fun addRecent(context: Context, item: YtItem) {
         if (item.url.isBlank()) return
         val list = ArrayList(entries(context))
         list.removeAll { it.url == item.url }
-        list.add(0, Entry(item.kind.name, item.title, item.url, item.subtitle, item.thumbnailUrl))
+        list.add(0, Entry(item.kind.name, item.title, item.url, item.subtitle, item.thumbnailUrl, item.duration))
         val max = maxRecent(context)
         while (list.size > max) {
             list.removeAt(list.size - 1)
