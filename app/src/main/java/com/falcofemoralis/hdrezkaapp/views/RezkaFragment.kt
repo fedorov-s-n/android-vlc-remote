@@ -21,7 +21,7 @@ import com.falcofemoralis.hdrezkaapp.interfaces.OnFragmentInteractionListener.Ac
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.objects.UserData
 import com.falcofemoralis.hdrezkaapp.utils.WebViewHttp
-import com.falcofemoralis.hdrezkaapp.views.fragments.ViewPagerFragment
+import com.falcofemoralis.hdrezkaapp.views.fragments.SearchFragment
 import com.jakewharton.processphoenix.ProcessPhoenix
 import com.squareup.picasso.Picasso
 import de.hdodenhof.circleimageview.CircleImageView
@@ -184,10 +184,11 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     private fun loadMain() {
-        val vpf = ViewPagerFragment()
-        mainFragment = vpf
-        currentFragment = vpf
-        onFragmentInteraction(null, vpf, Action.NEXT_FRAGMENT_REPLACE, false, null, null, null, null)
+        // The tab shows only the hdrezka search screen (no bottom sub-tabs).
+        val search = SearchFragment()
+        mainFragment = search
+        currentFragment = search
+        onFragmentInteraction(null, search, Action.NEXT_FRAGMENT_REPLACE, false, null, null, null, null)
         setUserAvatar()
     }
 
@@ -278,11 +279,11 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     override fun updatePager() {
-        (mainFragment as? ViewPagerFragment)?.setAdapter()
+        // No pager in the search-only tab.
     }
 
     override fun redrawPage(item: UpdateItem) {
-        (mainFragment as? ViewPagerFragment)?.updatePage(item)
+        // No pager in the search-only tab.
     }
 
     override fun setUserAvatar() {

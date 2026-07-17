@@ -100,7 +100,7 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
     private fun initSearchViews() {
         // pressed enter
         autoCompleteTextView.setOnEditorActionListener { v, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_SEARCH) {
                 autoCompleteTextView.dismissDropDown()
                 val text: String = autoCompleteTextView.text.toString()
 

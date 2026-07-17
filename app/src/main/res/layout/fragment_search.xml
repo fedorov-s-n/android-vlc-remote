@@ -9,78 +9,89 @@
     android:orientation="vertical"
     tools:context="com.falcofemoralis.hdrezkaapp.views.fragments.SearchFragment">
 
+    <!-- Content area: search results, with the empty-state hint overlaid on top. -->
     <FrameLayout
-        android:layout_marginStart="@dimen/search_margin"
-        android:layout_marginEnd="@dimen/search_margin"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/fragment_search_fcv_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/fragment_search_ll_hint"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="50dp"
+                android:layout_marginEnd="50dp"
+                android:gravity="center"
+                android:text="@string/search_page_hint"
+                android:textColor="@color/white"
+                android:textSize="@dimen/normal_text" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Search bar, pinned to the bottom. -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp">
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp">
 
         <AutoCompleteTextView
             android:id="@+id/fragment_search_act_suggest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/search_margin_top"
-            android:background="@color/unselected_btn_color"
+            android:background="@drawable/bg_search_input"
             android:drawableStart="@drawable/ic_baseline_search_24"
             android:drawableTint="@color/white"
+            android:dropDownVerticalOffset="4dp"
             android:focusable="true"
             android:hint="@string/search_hint"
-            android:imeOptions="actionNext"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
             android:nextFocusRight="@id/fragment_search_tv_clear"
-            android:padding="10dp"
-            android:paddingStart="10dp"
-            android:paddingEnd="80dp"
+            android:paddingStart="12dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="88dp"
+            android:paddingBottom="12dp"
+            android:drawablePadding="8dp"
             android:singleLine="true"
             android:textColor="@color/white"
-            android:textColorHint="@color/white" />
+            android:textColorHint="#80F6F6F6" />
 
         <ImageView
-            android:nextFocusLeft="@id/fragment_search_act_suggest"
-            android:nextFocusRight="@id/fragment_search_voice"
             android:id="@+id/fragment_search_tv_clear"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center|end"
-            android:layout_marginTop="@dimen/search_margin_top_clear"
             android:layout_marginEnd="50dp"
-            app:srcCompat="@drawable/ic_baseline_close_24"
             android:focusable="true"
-            android:visibility="gone"/>
+            android:nextFocusLeft="@id/fragment_search_act_suggest"
+            android:nextFocusRight="@id/fragment_search_voice"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_baseline_close_24" />
 
         <ImageView
             android:id="@+id/fragment_search_voice"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center|end"
-            android:layout_marginTop="@dimen/search_margin_top_clear"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="12dp"
             android:focusable="true"
             android:nextFocusLeft="@id/fragment_search_tv_clear"
             app:srcCompat="@drawable/ic_baseline_mic_none_24" />
 
     </FrameLayout>
-
-    <LinearLayout
-        android:id="@+id/fragment_search_ll_hint"
-        android:layout_width="match_parent"
-        android:layout_height="fill_parent"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="50dp"
-            android:layout_marginEnd="50dp"
-            android:gravity="center"
-            android:text="@string/search_page_hint"
-            android:textColor="@color/white"
-            android:textSize="@dimen/normal_text" />
-    </LinearLayout>
-
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/fragment_search_fcv_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 
 </LinearLayout>

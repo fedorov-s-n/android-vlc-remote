@@ -57,7 +57,6 @@ import com.falcofemoralis.hdrezkaapp.objects.*
 import com.falcofemoralis.hdrezkaapp.presenters.FilmPresenter
 import com.falcofemoralis.hdrezkaapp.utils.*
 import com.falcofemoralis.hdrezkaapp.utils.Highlighter.zoom
-import com.falcofemoralis.hdrezkaapp.views.MainActivity
 import com.falcofemoralis.hdrezkaapp.views.adapters.CommentsRecyclerViewAdapter
 import com.falcofemoralis.hdrezkaapp.views.elements.CommentEditor
 import com.falcofemoralis.hdrezkaapp.views.tv.player.PlayerActivity
