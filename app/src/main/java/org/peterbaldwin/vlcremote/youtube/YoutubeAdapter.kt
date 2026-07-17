@@ -35,7 +35,7 @@ class YoutubeAdapter(private val onClick: (YtItem) -> Unit) : RecyclerView.Adapt
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
         holder.title.text = item.title
-        holder.subtitle.text = item.uploader
+        holder.subtitle.text = item.subtitle
         val url = item.thumbnailUrl
         if (url.isNullOrEmpty()) {
             holder.thumb.setImageDrawable(null)

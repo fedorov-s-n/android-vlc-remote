@@ -212,6 +212,7 @@
     <string name="youtube_no_stream">No playable stream found</string>
     <string name="youtube_sent">Sent to VLC</string>
     <string name="youtube_error">YouTube error</string>
+    <string name="youtube_play">Play in VLC</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

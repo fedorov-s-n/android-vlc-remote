@@ -759,6 +759,14 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
                 return;
             }
         }
+        if (isCurrentTab(TAB_YOUTUBE)) {
+            String tag = "android:switcher:" + mPager.getId() + ":" + TAB_YOUTUBE_INDEX;
+            Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
+            if (f instanceof org.peterbaldwin.vlcremote.youtube.YoutubeFragment
+                    && ((org.peterbaldwin.vlcremote.youtube.YoutubeFragment) f).handleBackPressed()) {
+                return;
+            }
+        }
         super.onBackPressed();
     }
 
