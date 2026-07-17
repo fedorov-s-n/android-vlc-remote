@@ -43,11 +43,11 @@ object ActorModel {
                     actor.deathplace = getJsonString(person, "deathplace")
                     return actor
                 } else {
-                    throw HttpStatusException("failed to get actor data", 503, SettingsData.provider)
+                    throw HttpStatusException("failed to get actor data", 503, SettingsData.provider ?: "")
                 }
             }
         } else {
-            throw HttpStatusException("failed to get actor data", 400, SettingsData.provider)
+            throw HttpStatusException("failed to get actor data", 400, SettingsData.provider ?: "")
         }
 
         actor.hasMainData = true

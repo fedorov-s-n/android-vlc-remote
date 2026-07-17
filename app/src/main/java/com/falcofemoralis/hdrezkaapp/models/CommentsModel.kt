@@ -24,7 +24,7 @@ object CommentsModel {
     fun getCommentsFromPage(page: Int, filmId: String): ArrayList<Comment> {
         val unixTime = System.currentTimeMillis()
         val result: String = BaseModel.getJsoup(SettingsData.provider + COMMENT_LINK + "?t=$unixTime&news_id=$filmId&cstart=$page&type=0&comment_id=0&skin=hdrezka")
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .execute()
             .body()
 
@@ -38,7 +38,7 @@ object CommentsModel {
         }
 
         if (comments.size == 0) {
-            throw HttpStatusException("Empty list", 404, SettingsData.provider)
+            throw HttpStatusException("Empty list", 404, SettingsData.provider ?: "")
         }
 
         return comments
@@ -117,7 +117,7 @@ object CommentsModel {
 
         val result: Document? = BaseModel.getJsoup(SettingsData.provider + COMMENT_ADD)
             .data(data)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider) + "; allowed_comments=1")
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: "") + "; allowed_comments=1")
             .post()
 
         if (result != null) {
@@ -128,7 +128,7 @@ object CommentsModel {
             val msg = jsonObject.getString("message")
 
             if (msg == "[\"Он отобразится на сайте после проверки администрацией.\"]") {
-                throw HttpStatusException("comment must be apply by admin", 403, SettingsData.provider)
+                throw HttpStatusException("comment must be apply by admin", 403, SettingsData.provider ?: "")
             }
 
             val doc = Jsoup.parse(msg)
@@ -137,16 +137,16 @@ object CommentsModel {
                 comment.indent = indent
                 return comment
             } else {
-                throw HttpStatusException("failed to post comment", 400, SettingsData.provider)
+                throw HttpStatusException("failed to post comment", 400, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to post comment", 400, SettingsData.provider)
+            throw HttpStatusException("failed to post comment", 400, SettingsData.provider ?: "")
         }
     }
 
     fun postLike(comment: Comment, type: Comment.LikeType) {
         BaseModel.getJsoup(SettingsData.provider + COMMENT_LIKE + "?id=${comment.id}")
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .execute()
             .body()
 
@@ -166,7 +166,7 @@ object CommentsModel {
                     "&dle_allow_hash=${comment.deleteHash}"
                     + "&type=0&area=ajax"
         )
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .execute()
             .body()
     }

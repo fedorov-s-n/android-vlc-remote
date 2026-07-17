@@ -11,7 +11,7 @@ import org.jsoup.HttpStatusException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.safety.Whitelist
+import org.jsoup.safety.Safelist
 import org.jsoup.select.Elements
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -79,7 +79,7 @@ object FilmModel {
             }
             film.genres = genres
         } else {
-            throw HttpStatusException("failed to get film", 400, SettingsData.provider)
+            throw HttpStatusException("failed to get film", 400, SettingsData.provider ?: "")
         }
 
         return film
@@ -182,7 +182,7 @@ object FilmModel {
 
     fun getAdditionalData(film: Film): Film {
         val document: Document = BaseModel.getJsoup(film.filmLink)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider) + "; allowed_comments=1;")
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: "") + "; allowed_comments=1;")
             .get()
         film.origTitle = document.select("div.b-post__origtitle").text()
         film.description = document.select("div.b-post__description_text").text()
@@ -502,7 +502,7 @@ object FilmModel {
     fun postWatch(watchId: Int) {
         val result: Element? = BaseModel.getJsoup(SettingsData.provider + WATCH_ADD)
             .data("id", watchId.toString())
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider) + "; allowed_comments=1;")
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: "") + "; allowed_comments=1;")
             .post()
 
         if (result != null) {
@@ -511,14 +511,14 @@ object FilmModel {
 
             val isSuccess: Boolean = jsonObject.getBoolean("success")
             if (!isSuccess) {
-                throw HttpStatusException("failed to post watch because: ${jsonObject.getString("message")}", 400, SettingsData.provider)
+                throw HttpStatusException("failed to post watch because: ${jsonObject.getString("message")}", 400, SettingsData.provider ?: "")
             }
         }
     }
 
     fun postRating(film: Film, rating: Float) {
         val result: String = BaseModel.getJsoup(SettingsData.provider + RATING_ADD + "?news_id=${film.filmId}&go_rate=${rating}&skin=hdrezka")
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .execute()
             .body()
 
@@ -530,7 +530,7 @@ object FilmModel {
             film.votesHR = jsonObject.getString("votes")
             film.isHRratingActive = !film.isHRratingActive!!
         } else {
-            throw HttpStatusException("failed to post comment", 400, SettingsData.provider)
+            throw HttpStatusException("failed to post comment", 400, SettingsData.provider ?: "")
         }
     }
 
@@ -558,10 +558,10 @@ object FilmModel {
                     getThumbnails(thumbnailsUrl, translation)
                 }
             } else {
-                throw HttpStatusException("failed to get stream in object", 405, SettingsData.provider)
+                throw HttpStatusException("failed to get stream in object", 405, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to get stream", 405, SettingsData.provider)
+            throw HttpStatusException("failed to get stream", 405, SettingsData.provider ?: "")
         }
     }
 
@@ -612,7 +612,7 @@ object FilmModel {
         document.select("br").append("\\n")
         document.select("p").prepend("\\n\\n")
         val s = document.html().replace("\\\\n".toRegex(), "\n")
-        return Jsoup.clean(s, "", Whitelist.none(), Document.OutputSettings().prettyPrint(false))
+        return Jsoup.clean(s, "", Safelist.none(), Document.OutputSettings().prettyPrint(false))
     }
 
     private fun timeVtt(srt: String): Float {
@@ -746,10 +746,10 @@ object FilmModel {
                 translation.seasons = parseSeasons(Jsoup.parse(jsonObject.getString("episodes")))
                 return translation
             } else {
-                throw HttpStatusException("failed to get seasons in object", 405, SettingsData.provider)
+                throw HttpStatusException("failed to get seasons in object", 405, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to get seasons", 405, SettingsData.provider)
+            throw HttpStatusException("failed to get seasons", 405, SettingsData.provider ?: "")
         }
     }
 
@@ -794,10 +794,10 @@ object FilmModel {
                     getThumbnails(thumbnailsUrl, translation)
                 }
             } else {
-                throw HttpStatusException("failed to get stream in object", 405, SettingsData.provider)
+                throw HttpStatusException("failed to get stream in object", 405, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to get stream", 405, SettingsData.provider)
+            throw HttpStatusException("failed to get stream", 405, SettingsData.provider ?: "")
         }
     }
 
@@ -832,7 +832,7 @@ object FilmModel {
         val unixTime = System.currentTimeMillis()
         val result: Document? = BaseModel.getJsoup(SettingsData.provider + SEND_WATCH + "/?t=$unixTime")
             .data(data)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .post()
 
         if (result != null) {
@@ -840,10 +840,10 @@ object FilmModel {
             val jsonObject = JSONObject(bodyString)
 
             if (!jsonObject.getBoolean("success")) {
-                throw HttpStatusException("failed to save watch", 400, SettingsData.provider)
+                throw HttpStatusException("failed to save watch", 400, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to save watch", 400, SettingsData.provider)
+            throw HttpStatusException("failed to save watch", 400, SettingsData.provider ?: "")
         }
     }
 
@@ -853,7 +853,7 @@ object FilmModel {
 
         val result: Document? = BaseModel.getJsoup(SettingsData.provider + GET_TRAILER_VIDEO)
             .data(data)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .post()
 
         if (result != null) {
@@ -870,7 +870,7 @@ object FilmModel {
                 return null
             }
         } else {
-            throw HttpStatusException("failed to get youtube trailer", 400, SettingsData.provider)
+            throw HttpStatusException("failed to get youtube trailer", 400, SettingsData.provider ?: "")
         }
     }
 }

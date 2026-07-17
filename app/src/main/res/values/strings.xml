@@ -206,6 +206,12 @@
     <string name="pref_hdrezka_clear_history_title">Clear history</string>
     <string name="pref_hdrezka_clear_history_summary">Remove all recently opened films</string>
     <string name="hdrezka_history_cleared">History cleared</string>
+    <string name="tab_youtube">YouTube</string>
+    <string name="youtube_search_hint">Search YouTube</string>
+    <string name="youtube_no_server">Select a VLC server first</string>
+    <string name="youtube_no_stream">No playable stream found</string>
+    <string name="youtube_sent">Sent to VLC</string>
+    <string name="youtube_error">YouTube error</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

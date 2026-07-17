@@ -99,7 +99,7 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
                 fun checkFilmsPage() {
                     // no more films
                     if (loadedListFilms.size == 0) {
-                        throw HttpStatusException("List end", 404, SettingsData.provider)
+                        throw HttpStatusException("List end", 404, SettingsData.provider ?: "")
                     }
                     currentPage++
                 }

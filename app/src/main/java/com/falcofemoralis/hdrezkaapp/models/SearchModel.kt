@@ -46,7 +46,7 @@ object SearchModel {
 
     fun getFilmsFromSearchPage(query: String, page: Int): ArrayList<Film> {
         val doc: Document = BaseModel.getJsoup(SettingsData.provider + "/search/?do=search&subaction=search&q=${URLEncoder.encode(query, "UTF-8")}&page=$page")
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .get()
 
         return FilmsListModel.getFilmsFromPage(doc)

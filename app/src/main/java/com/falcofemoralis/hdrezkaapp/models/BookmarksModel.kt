@@ -17,7 +17,7 @@ object BookmarksModel {
 
     fun getBookmarksList(): ArrayList<Bookmark> {
         val document: Document = BaseModel.getJsoup(SettingsData.provider + BOOKMARKS_PAGE)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .get()
 
         val bookmarks: ArrayList<Bookmark> = ArrayList()
@@ -46,7 +46,7 @@ object BookmarksModel {
             url += "&genre=${show}"
         }
 
-        val doc: Document = BaseModel.getJsoup(url).header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider)).get()
+        val doc: Document = BaseModel.getJsoup(url).header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: "")).get()
         return FilmsListModel.getFilmsFromPage(doc)
     }
 
@@ -57,7 +57,7 @@ object BookmarksModel {
 
         val result: Element? = BaseModel.getJsoup(SettingsData.provider + POST_URL)
             .data(data)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .post()
 
         if (result != null) {
@@ -70,10 +70,10 @@ object BookmarksModel {
                 val catName = jsonObject.getString("name") + " (1)"
                 return Bookmark(id, "", catName, 1)
             } else {
-                throw HttpStatusException("failed to post catalog because: ${jsonObject.getString("message")}", 400, SettingsData.provider)
+                throw HttpStatusException("failed to post catalog because: ${jsonObject.getString("message")}", 400, SettingsData.provider ?: "")
             }
         } else {
-            throw HttpStatusException("failed to post catalog because body is empty", 404, SettingsData.provider)
+            throw HttpStatusException("failed to post catalog because body is empty", 404, SettingsData.provider ?: "")
         }
     }
 
@@ -85,7 +85,7 @@ object BookmarksModel {
 
         BaseModel.getJsoup(SettingsData.provider + POST_URL)
             .data(data)
-            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider))
+            .header("Cookie", CookieManager.getInstance().getCookie(SettingsData.provider ?: ""))
             .post()
     }
 }
