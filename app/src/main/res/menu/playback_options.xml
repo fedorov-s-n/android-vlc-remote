@@ -18,6 +18,11 @@
             android:showAsAction="always" />
     </group>
     <item
+        android:id="@+id/menu_hdrezka_history"
+        android:title="@string/hdrezka_history"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:showAsAction="always" />
+    <item
         android:id="@+id/menu_help_install"
         android:title="@string/install_guide"
         android:icon="@drawable/ic_menu_help" />

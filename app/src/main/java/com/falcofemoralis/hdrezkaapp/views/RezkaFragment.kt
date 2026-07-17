@@ -157,6 +157,18 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     }
 
     /**
+     * Returns to the search screen and shows the recently opened films (the "history").
+     * Invoked from the toolbar button on the hdrezka tab.
+     */
+    fun showHistory() {
+        // Pop any open film/actor pages so the search screen is shown.
+        while (childFragmentManager.backStackEntryCount > 0) {
+            childFragmentManager.popBackStackImmediate()
+        }
+        (mainFragment as? SearchFragment)?.showHistory()
+    }
+
+    /**
      * Handle back for the hdrezka tab. Returns true if the event was consumed.
      */
     fun handleBackPressed(): Boolean {

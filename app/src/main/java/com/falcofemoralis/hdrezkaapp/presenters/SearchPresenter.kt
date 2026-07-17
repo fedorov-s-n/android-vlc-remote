@@ -28,6 +28,15 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
         filmsListView.setFilms(activeListFilms)
     }
 
+    /** Shows the given films (e.g. recently opened) as the idle list on the search screen. */
+    fun showRecent(recent: ArrayList<Film>) {
+        activeSearchFilms.clear()
+        loadedListFilms.clear()
+        activeListFilms.clear()
+        activeListFilms.addAll(recent)
+        filmsListView.setFilms(activeListFilms)
+    }
+
     fun getFilms(text: String) {
         GlobalScope.launch {
             try {

@@ -187,8 +187,15 @@
     <string name="vlc_sent">Отправлено в VLC</string>
     <string name="vlc_subtitle_failed">Не удалось загрузить субтитры (нужен помощник на порту 3900)</string>
     <string name="preference_category_hdrezka_title">HDrezka</string>
+    <string name="hdrezka_history">История</string>
     <string name="pref_hdrezka_provider_title">Зеркало HDrezka</string>
     <string name="pref_hdrezka_provider_summary">Адрес сайта HDrezka для вкладки (по умолчанию https://rezka.ag)</string>
+    <string name="pref_hdrezka_sub_server_enabled_title">Сервер субтитров</string>
+    <string name="pref_hdrezka_sub_server_enabled_summary">Скачивать субтитры на машину VLC через сервер-помощник (нужно для показа субтитров)</string>
+    <string name="pref_hdrezka_sub_server_host_title">Адрес сервера субтитров</string>
+    <string name="pref_hdrezka_sub_server_host_summary">Хост сервера-помощника. Пусто — использовать адрес VLC-сервера</string>
+    <string name="pref_hdrezka_sub_server_port_title">Порт сервера субтитров</string>
+    <string name="pref_hdrezka_sub_server_port_summary">Порт сервера-помощника (по умолчанию 3900)</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

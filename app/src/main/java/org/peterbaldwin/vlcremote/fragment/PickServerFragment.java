@@ -321,7 +321,7 @@ public final class PickServerFragment extends PreferenceFragment implements Port
                Preferences.KEY_SUBTITLE_DELAY.equals(preferenceKey)  ||
                // hdrezka settings: use default preference handling instead of the
                // server-selection fall-through below.
-               "hdrezka_provider".equals(preferenceKey);
+               (preferenceKey != null && preferenceKey.startsWith("hdrezka_"));
     }
 
     @Override

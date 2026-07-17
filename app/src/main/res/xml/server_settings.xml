@@ -2,16 +2,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="@string/settings" >
 
-    <PreferenceCategory android:title="@string/preference_category_hdrezka_title">
-        <EditTextPreference
-            android:key="hdrezka_provider"
-            android:title="@string/pref_hdrezka_provider_title"
-            android:summary="@string/pref_hdrezka_provider_summary"
-            android:defaultValue="https://rezka.ag"
-            android:inputType="textUri"
-            android:persistent="true" />
-    </PreferenceCategory>
-
     <PreferenceScreen
         android:title="@string/preference_screen_interface_title"
         android:key="@string/preference_screen_interface_key"
@@ -135,9 +125,48 @@
             android:dependency="@string/preference_key_notification"
             android:summary="@string/summary_preference_notification_icon"
             android:title="@string/preference_title_notification_icon_transparent" />
-        
+
     </PreferenceScreen>
-    
+
+    <PreferenceScreen
+        android:key="hdrezka_settings_screen"
+        android:title="@string/preference_category_hdrezka_title"
+        android:icon="@drawable/ic_baseline_local_movies_24"
+        android:persistent="false">
+
+        <EditTextPreference
+            android:key="hdrezka_provider"
+            android:title="@string/pref_hdrezka_provider_title"
+            android:summary="@string/pref_hdrezka_provider_summary"
+            android:defaultValue="https://rezka.ag"
+            android:inputType="textUri"
+            android:persistent="true" />
+
+        <CheckBoxPreference
+            android:key="hdrezka_sub_server_enabled"
+            android:title="@string/pref_hdrezka_sub_server_enabled_title"
+            android:summary="@string/pref_hdrezka_sub_server_enabled_summary"
+            android:defaultValue="true"
+            android:persistent="true" />
+
+        <EditTextPreference
+            android:key="hdrezka_sub_server_host"
+            android:title="@string/pref_hdrezka_sub_server_host_title"
+            android:summary="@string/pref_hdrezka_sub_server_host_summary"
+            android:dependency="hdrezka_sub_server_enabled"
+            android:inputType="text"
+            android:persistent="true" />
+
+        <EditTextPreference
+            android:key="hdrezka_sub_server_port"
+            android:title="@string/pref_hdrezka_sub_server_port_title"
+            android:summary="@string/pref_hdrezka_sub_server_port_summary"
+            android:defaultValue="3900"
+            android:dependency="hdrezka_sub_server_enabled"
+            android:inputType="number"
+            android:persistent="true" />
+    </PreferenceScreen>
+
     <PreferenceCategory android:title="@string/preference_category_phone_title">
         
         <CheckBoxPreference

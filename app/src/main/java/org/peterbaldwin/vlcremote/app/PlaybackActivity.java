@@ -357,6 +357,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         onPrepareSearchView(i, isPlaylistVisible);
         menu.findItem(R.id.menu_clear_playlist).setVisible(isPlaylistVisible);
         menu.findItem(R.id.menu_refresh).setVisible(isPlaylistVisible);
+        menu.findItem(R.id.menu_hdrezka_history).setVisible(isCurrentTab(TAB_HDREZKA));
         menu.findItem(R.id.menu_home).setVisible(isBrowseVisible);
         menu.findItem(R.id.menu_libraries).setVisible(isBrowseVisible);
         menu.findItem(R.id.menu_parent).setVisible(isBrowseVisible);
@@ -386,6 +387,9 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.menu_hdrezka_history:
+                showHdrezkaHistory();
+                return true;
             case R.id.menu_preferences:
                 pickServer();
                 return true;
@@ -419,6 +423,17 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         }
     }
     
+    private void showHdrezkaHistory() {
+        if (mPager == null) {
+            return;
+        }
+        String tag = "android:switcher:" + mPager.getId() + ":" + TAB_HDREZKA_INDEX;
+        Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
+        if (f instanceof RezkaFragment) {
+            ((RezkaFragment) f).showHistory();
+        }
+    }
+
     @Override
     public void setButtonVisibilityListener(ButtonVisibilityListener l) {
         mButtonsVisibleListener = l;

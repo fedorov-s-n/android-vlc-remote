@@ -91,6 +91,15 @@ class FilmFragment : Fragment(), FilmView {
     private var selEpisodes: List<String> = emptyList()
     private var selSeason: String? = null
 
+    private var currentFilmLink: String? = null
+
+    // History values to apply once during the initial cascade (null = already consumed).
+    private var pendingHistVoice: String? = null
+    private var pendingHistSeason: String? = null
+    private var pendingHistEpisode: String? = null
+    private var pendingHistQuality: String? = null
+    private var pendingHistSubtitle: String? = null
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         fragmentListener = hdrezkaHost()
@@ -123,7 +132,23 @@ class FilmFragment : Fragment(), FilmView {
         progressBar = currentView.findViewById(R.id.fragment_film_pb_loading)
         commentsList = currentView.findViewById(R.id.fragment_film_rv_comments)
 
-        filmPresenter = FilmPresenter(this, (arguments?.getSerializable(FILM_ARG) as Film?)!!)
+        val argFilm = (arguments?.getSerializable(FILM_ARG) as Film?)!!
+        filmPresenter = FilmPresenter(this, argFilm)
+        currentFilmLink = argFilm.filmLink
+
+        // Choose which dropdown selections to pre-apply (priority 1): this film's own
+        // stored selections if it was opened before, otherwise the last opened film's.
+        val historyCtx = requireContext()
+        val source = HdrezkaHistory.getForLink(historyCtx, currentFilmLink)
+            ?: HdrezkaHistory.getMostRecent(historyCtx)
+        pendingHistVoice = source?.voice
+        pendingHistSeason = source?.season
+        pendingHistEpisode = source?.episode
+        pendingHistQuality = source?.quality
+        pendingHistSubtitle = source?.subtitle
+
+        // Record/refresh this page in the recent-films history (keeps its selections).
+        HdrezkaHistory.addRecent(historyCtx, currentFilmLink, argFilm.title, argFilm.posterPath)
 
         filmPresenter.initFilmData()
 
@@ -258,11 +283,17 @@ class FilmFragment : Fragment(), FilmView {
         val subPos = subtitleSpinner.selectedItemPosition
         if (subPos > 0) {
             voice.subtitles?.getOrNull(subPos - 1)?.let { sub ->
-                val host = org.peterbaldwin.vlcremote.model.Server.fromKey(authority).host
+                val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
+                if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
+                    return@let
+                }
+                val host = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
+                    ?: org.peterbaldwin.vlcremote.model.Server.fromKey(authority).host
+                val port = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
                 val ext = sub.url.substringBefore('?').substringAfterLast('.', "vtt")
                 val name = sub.lang.replace(Regex("[^A-Za-z0-9]"), "_") + "." + ext
                 org.peterbaldwin.vlcremote.rezka.DownloadPathClient.requestTempPath(
-                    host, 3900, sub.url, name,
+                    host, port, sub.url, name,
                     object : org.peterbaldwin.vlcremote.rezka.DownloadPathClient.Callback {
                         override fun onSuccess(tempPath: String) {
                             server.status().command.input.subtitles(tempPath)
@@ -280,6 +311,7 @@ class FilmFragment : Fragment(), FilmView {
         }
 
         Toast.makeText(requireContext(), getString(R.string.vlc_sent), Toast.LENGTH_SHORT).show()
+        persistHistory()
     }
 
     private fun <T> spinnerAdapter(items: List<T>): ArrayAdapter<T> {
@@ -297,12 +329,22 @@ class FilmFragment : Fragment(), FilmView {
         }
         val isMovie = film.isMovieTranslation == true
 
+        // pendingHist* were captured in onCreateView; they are consumed one-by-one as the
+        // initial cascade populates each spinner, then user changes take over.
+
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val season = selSeasonKeys.getOrNull(position) ?: return
                 selSeason = season
                 selEpisodes = selSeasons?.get(season)?.toList() ?: emptyList()
                 episodeSpinner.adapter = spinnerAdapter(selEpisodes.map { getString(R.string.sel_episode) + " " + it })
+                // Restore the remembered episode within this season, if present.
+                pendingHistEpisode?.let { hist ->
+                    val idx = selEpisodes.indexOf(hist)
+                    if (idx > 0) episodeSpinner.setSelection(idx)
+                    pendingHistEpisode = null
+                }
+                persistHistory()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -314,6 +356,7 @@ class FilmFragment : Fragment(), FilmView {
                 val season = selSeason ?: return
                 val episode = selEpisodes.getOrNull(position) ?: return
                 loadEpisodeStreams(voice, season, episode)
+                persistHistory()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -333,17 +376,39 @@ class FilmFragment : Fragment(), FilmView {
                         selSeasons = seasons
                         selSeasonKeys = seasons.keys.toList()
                         seasonSpinner.adapter = spinnerAdapter(selSeasonKeys.map { getString(R.string.sel_season) + " " + it })
+                        // Restore the remembered season, if present.
+                        pendingHistSeason?.let { hist ->
+                            val idx = selSeasonKeys.indexOf(hist)
+                            if (idx > 0) seasonSpinner.setSelection(idx)
+                            pendingHistSeason = null
+                        }
                     }
                 }
+                persistHistory()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         voiceSpinner.adapter = spinnerAdapter(translations.map { it.name ?: "" })
-        // Prefer the original voice when available.
-        val voiceIdx = translations.indexOfFirst { it.name?.contains("Оригинал", true) == true }
+        // First priority: the remembered voice; otherwise prefer the original voice.
+        val voiceIdx = translations.indexOfFirst { it.name == pendingHistVoice }
+            .takeIf { it >= 0 }
+            ?: translations.indexOfFirst { it.name?.contains("Оригинал", true) == true }
+        pendingHistVoice = null
         if (voiceIdx > 0) voiceSpinner.setSelection(voiceIdx)
+    }
+
+    /** Saves the current selection state to the tab history. */
+    private fun persistHistory() {
+        val ctx = context ?: return
+        val voice = selCurrentVoice?.name
+        val seriesVisible = seasonSpinner.visibility == View.VISIBLE
+        val season = if (seriesVisible) selSeason else null
+        val episode = if (seriesVisible) selEpisodes.getOrNull(episodeSpinner.selectedItemPosition) else null
+        val quality = qualitySpinner.selectedItem as? String
+        val subtitle = subtitleSpinner.selectedItem as? String
+        HdrezkaHistory.updateSelections(ctx, currentFilmLink, voice, season, episode, quality, subtitle)
     }
 
     private fun setSeriesSelectorsVisible(visible: Boolean) {
@@ -370,9 +435,13 @@ class FilmFragment : Fragment(), FilmView {
     private fun populateQualityAndSubtitles(voice: Voice) {
         val streams = voice.streams ?: arrayListOf()
         qualitySpinner.adapter = spinnerAdapter(streams.map { it.quality })
-        // Prefer 1080p; otherwise fall back to the highest available quality.
+        qualitySpinner.onItemSelectedListener = persistOnSelect
         if (streams.isNotEmpty()) {
-            val qualityIdx = streams.indexOfFirst { it.quality.equals("1080p", true) }
+            // First priority: the remembered quality; otherwise 1080p; otherwise the highest.
+            val histIdx = pendingHistQuality?.let { hist -> streams.indexOfFirst { it.quality == hist } } ?: -1
+            pendingHistQuality = null
+            val qualityIdx = if (histIdx >= 0) histIdx
+            else streams.indexOfFirst { it.quality.equals("1080p", true) }
                 .let { if (it >= 0) it else streams.lastIndex }
             if (qualityIdx > 0) qualitySpinner.setSelection(qualityIdx)
         }
@@ -381,9 +450,22 @@ class FilmFragment : Fragment(), FilmView {
         val subItems = arrayListOf(getString(R.string.msg_subtitle_off))
         subItems.addAll(subs.map { it.lang })
         subtitleSpinner.adapter = spinnerAdapter(subItems)
-        // Prefer English subtitles when available.
-        val subIdx = subItems.indexOfFirst { it.contains("english", true) }
+        subtitleSpinner.onItemSelectedListener = persistOnSelect
+        // First priority: the remembered subtitle; otherwise prefer English.
+        val subIdx = (pendingHistSubtitle?.let { hist -> subItems.indexOf(hist) } ?: -1)
+            .takeIf { it >= 0 }
+            ?: subItems.indexOfFirst { it.contains("english", true) }
+        pendingHistSubtitle = null
         if (subIdx > 0) subtitleSpinner.setSelection(subIdx)
+    }
+
+    /** Persists the selection whenever the quality or subtitle spinner changes. */
+    private val persistOnSelect = object : AdapterView.OnItemSelectedListener {
+        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            persistHistory()
+        }
+
+        override fun onNothingSelected(parent: AdapterView<*>?) {}
     }
 
     override fun setFilmBaseData(film: Film) {

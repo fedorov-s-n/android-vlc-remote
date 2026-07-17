@@ -22,10 +22,12 @@ import com.falcofemoralis.hdrezkaapp.constants.DeviceType
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection
 import com.falcofemoralis.hdrezkaapp.interfaces.IProgressState
 import com.falcofemoralis.hdrezkaapp.interfaces.OnFragmentInteractionListener
+import com.falcofemoralis.hdrezkaapp.objects.Film
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.presenters.SearchPresenter
 import com.falcofemoralis.hdrezkaapp.utils.ExceptionHelper
 import com.falcofemoralis.hdrezkaapp.utils.FragmentOpener
+import com.falcofemoralis.hdrezkaapp.utils.HdrezkaHistory
 import com.falcofemoralis.hdrezkaapp.utils.Highlighter
 import com.falcofemoralis.hdrezkaapp.views.elements.VoiceInputDialogFragmentOverride
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.FilmListCallView
@@ -92,6 +94,31 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
         searchPresenter.initFilms()
         filmsListFragment.setProgressBarState(IProgressState.StateType.LOADED)
         super.onStart()
+
+        // Idle state: show the recently opened films so they can be reopened.
+        showRecent()
+    }
+
+    /** Clears the query and shows the recently opened films (invoked from the toolbar). */
+    fun showHistory() {
+        if (::autoCompleteTextView.isInitialized) {
+            autoCompleteTextView.setText("")
+            clearBtn.visibility = View.GONE
+        }
+        showRecent()
+    }
+
+    /** Shows recently opened films as the idle list (or the hint when there are none). */
+    private fun showRecent() {
+        if (!::searchPresenter.isInitialized) return
+        val recent = HdrezkaHistory.getRecent(requireContext()).map { r ->
+            Film(r.link).apply {
+                title = r.title
+                posterPath = r.poster
+            }
+        }
+        hintLayout.visibility = if (recent.isEmpty()) View.VISIBLE else View.GONE
+        searchPresenter.showRecent(ArrayList(recent))
     }
 
     override fun onFilmsListDataInit() {
@@ -105,11 +132,12 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
                 val text: String = autoCompleteTextView.text.toString()
 
                 //проверяем ведденный текст
-                if (text.isEmpty()) {
-                    Toast.makeText(context, getString(R.string.enter_film_name), Toast.LENGTH_SHORT).show()
+                imm.hideSoftInputFromWindow(autoCompleteTextView.windowToken, 0)
+                if (text.isBlank()) {
+                    // Empty or whitespace-only: show the history (recently opened films).
+                    showRecent()
                 } else {
                     hintLayout.visibility = View.GONE
-                    imm.hideSoftInputFromWindow(autoCompleteTextView.windowToken, 0)
                    // searchPresenter.setQuery(text)
                 }
             }
@@ -127,7 +155,7 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 if (!autoCompleteTextView.isPerformingCompletion) {
-                    if (s.toString().isNotEmpty()) {
+                    if (s.toString().isNotBlank()) {
                         if(!isSearching) {
                             isSearching = true
                             GlobalScope.launch {
@@ -150,8 +178,9 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
                         clearBtn.visibility = View.VISIBLE
                         hintLayout.visibility = View.GONE
                     } else {
-                        clearBtn.visibility = View.GONE
-                        hintLayout.visibility = View.VISIBLE
+                        // Empty or whitespace-only: show the history (recently opened films).
+                        clearBtn.visibility = if (s.toString().isEmpty()) View.GONE else View.VISIBLE
+                        showRecent()
                     }
                 }
             }
