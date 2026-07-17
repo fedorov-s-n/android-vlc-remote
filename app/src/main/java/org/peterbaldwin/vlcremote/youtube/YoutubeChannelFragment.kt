@@ -145,6 +145,7 @@ class YoutubeChannelFragment : Fragment() {
         }
         val desc = view.findViewById<TextView>(R.id.youtube_channel_description)
         desc.text = HtmlCompat.fromHtml(ch.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        desc.movementMethod = android.text.method.LinkMovementMethod.getInstance()
         ch.bannerUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_banner)) }
         ch.avatarUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_avatar)) }
     }

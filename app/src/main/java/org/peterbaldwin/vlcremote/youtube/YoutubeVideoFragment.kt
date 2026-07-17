@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback
+import com.falcofemoralis.hdrezkaapp.utils.SubtitleAttacher
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -104,8 +105,9 @@ class YoutubeVideoFragment : Fragment() {
                 )
             }
         }
-        view.findViewById<TextView>(R.id.youtube_video_description).text =
-            HtmlCompat.fromHtml(v.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        val descView = view.findViewById<TextView>(R.id.youtube_video_description)
+        descView.text = HtmlCompat.fromHtml(v.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        descView.movementMethod = android.text.method.LinkMovementMethod.getInstance()
 
         v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
 
@@ -113,6 +115,13 @@ class YoutubeVideoFragment : Fragment() {
         audioSpinner.adapter = spinnerAdapter(v.audios.map { it.label })
         val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
         subtitleSpinner.adapter = spinnerAdapter(subLabels)
+
+        // Defaults, same reasoning as the rezka tab: prefer 1080p (else the highest, which
+        // is already first since qualities are sorted descending) and English subtitles.
+        val q1080 = v.qualities.indexOfFirst { it.label.startsWith("1080") }
+        if (q1080 > 0) qualitySpinner.setSelection(q1080)
+        val engSub = v.subtitles.indexOfFirst { it.label.contains("english", true) }
+        if (engSub >= 0) subtitleSpinner.setSelection(engSub + 1) // +1 for "no subtitles" at index 0
     }
 
     private fun spinnerAdapter(items: List<String>): ArrayAdapter<String> {
@@ -173,24 +182,25 @@ class YoutubeVideoFragment : Fragment() {
 
         val options = ArrayList<String>()
         options.add(":meta-title=" + v.title)
-
-        // Extra inputs attached to the main stream. VLC auto-detects each slave's type
-        // (audio vs subtitle), and both go through :input-slave (the audio path that works),
-        // joined with '#' when there are several.
-        val slaves = ArrayList<String>()
+        // A video-only stream has no audio of its own; attach the selected audio track.
         if (quality.isVideoOnly) {
-            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { slaves.add(it.url) }
-        }
-        val subPos = subtitleSpinner.selectedItemPosition // index 0 = "no subtitles"
-        if (subPos > 0) {
-            v.subtitles.getOrNull(subPos - 1)?.let { slaves.add(it.url) }
-        }
-        if (slaves.isNotEmpty()) {
-            options.add(":input-slave=" + slaves.joinToString("#"))
+            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { options.add(":input-slave=" + it.url) }
         }
 
         RezkaPlayback.clear()
-        MediaServer(requireContext(), authority).status().command.input.playWithOptions(quality.url, options)
+        val server = MediaServer(requireContext(), authority)
+        server.status().command.input.playWithOptions(quality.url, options)
+
+        // Subtitles: VLC won't fetch the remote URL itself, so download it to the VLC host
+        // via the helper (same as the rezka tab) and addsubtitle the local file.
+        val subPos = subtitleSpinner.selectedItemPosition // index 0 = "no subtitles"
+        if (subPos > 0) {
+            v.subtitles.getOrNull(subPos - 1)?.let { sub ->
+                val name = sub.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt"
+                SubtitleAttacher.attach(requireContext(), server, authority, sub.url, name)
+            }
+        }
+
         Toast.makeText(requireContext(), getString(R.string.youtube_sent), Toast.LENGTH_SHORT).show()
     }
 

@@ -170,29 +170,8 @@ object RezkaPlayback {
      * and toggles the subtitle track on (VLC's addsubtitle does not accept remote URLs).
      */
     private fun attachSubtitle(context: Context, server: MediaServer, authority: String, subtitle: Subtitle) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
-            return
-        }
-        val host = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
-            ?: Server.fromKey(authority).host
-        val port = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
         val ext = subtitle.url.substringBefore('?').substringAfterLast('.', "vtt")
         val name = subtitle.lang.replace(Regex("[^A-Za-z0-9]"), "_") + "." + ext
-        DownloadPathClient.requestTempPath(
-            host, port, subtitle.url, name,
-            object : DownloadPathClient.Callback {
-                override fun onSuccess(tempPath: String) {
-                    server.status().command.input.subtitles(tempPath)
-                    handler.postDelayed({
-                        server.status().command.key(Hotkeys.SUBTITLE_TRACK)
-                    }, 3000)
-                }
-
-                override fun onError(e: Exception, serverBody: String?) {
-                    Toast.makeText(context, context.getString(R.string.vlc_subtitle_failed), Toast.LENGTH_LONG).show()
-                }
-            }
-        )
+        SubtitleAttacher.attach(context, server, authority, subtitle.url, name)
     }
 }

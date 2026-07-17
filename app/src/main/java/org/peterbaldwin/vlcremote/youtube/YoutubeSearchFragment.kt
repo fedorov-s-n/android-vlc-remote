@@ -2,6 +2,8 @@ package org.peterbaldwin.vlcremote.youtube
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -33,6 +35,12 @@ class YoutubeSearchFragment : Fragment() {
     private var isLoading = false
     private var hasMore = false
 
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var pendingQuery = ""
+    private val searchRunnable = Runnable {
+        if (isAdded && pendingQuery.isNotEmpty()) doSearch(pendingQuery)
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_youtube_search, container, false)
         progress = view.findViewById(R.id.youtube_progress)
@@ -58,7 +66,15 @@ class YoutubeSearchFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 clear.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
-                if (s.isNullOrEmpty()) showRecent()
+                searchHandler.removeCallbacks(searchRunnable)
+                val text = s?.toString()?.trim() ?: ""
+                if (text.isEmpty()) {
+                    showRecent()
+                } else {
+                    // Search as you type, like the rezka tab (debounced).
+                    pendingQuery = text
+                    searchHandler.postDelayed(searchRunnable, 400)
+                }
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -66,6 +82,7 @@ class YoutubeSearchFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
                 val q = v.text.toString().trim()
                 if (q.isNotEmpty()) {
+                    searchHandler.removeCallbacks(searchRunnable)
                     hideKeyboard()
                     doSearch(q)
                 }
@@ -76,6 +93,11 @@ class YoutubeSearchFragment : Fragment() {
         }
         showRecent()
         return view
+    }
+
+    override fun onDestroyView() {
+        searchHandler.removeCallbacks(searchRunnable)
+        super.onDestroyView()
     }
 
     /** Toolbar History: clear the query and show the recently opened items. */
