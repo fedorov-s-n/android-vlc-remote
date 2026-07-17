@@ -21,6 +21,7 @@ object YoutubePlayback {
     private var authority: String? = null
     private var qualityLabel: String? = null
     private var subtitleLabel: String? = null
+    private var auto: Boolean = false
 
     /** True while the last thing started via this app was a video from a YouTube playlist. */
     @JvmStatic
@@ -35,6 +36,7 @@ object YoutubePlayback {
         authority = null
         qualityLabel = null
         subtitleLabel = null
+        auto = false
     }
 
     /**
@@ -47,7 +49,8 @@ object YoutubePlayback {
         titles: List<String>,
         index: Int,
         qualityLabel: String?,
-        subtitleLabel: String?
+        subtitleLabel: String?,
+        auto: Boolean
     ) {
         this.authority = authority
         this.urls = urls
@@ -55,6 +58,7 @@ object YoutubePlayback {
         this.index = index
         this.qualityLabel = qualityLabel
         this.subtitleLabel = subtitleLabel
+        this.auto = auto
     }
 
     @JvmStatic
@@ -75,6 +79,14 @@ object YoutubePlayback {
         val auth = authority ?: return
         val url = urls.getOrNull(index) ?: return
         val title = titles.getOrNull(index)
+
+        // Auto: hand VLC the watch URL and let it resolve everything (HQ + seekable), same as
+        // the video page's default. No stream extraction needed.
+        if (auto) {
+            MediaServer(context, auth).status().command.input.playWithMetaTitle(url, title)
+            return
+        }
+
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 val v = YoutubeClient.video(url)
