@@ -4,8 +4,6 @@ import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.TypedValue
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,10 +11,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,11 +28,8 @@ class YoutubeSearchFragment : Fragment() {
     private lateinit var input: EditText
     private lateinit var clear: ImageView
 
-    private enum class SortMode { RELEVANCE, DATE, VIEWS }
-
     private val allItems = ArrayList<YtItem>()
     private var query: String = ""
-    private var sortMode = SortMode.RELEVANCE
     private var isLoading = false
     private var hasMore = false
 
@@ -81,42 +73,20 @@ class YoutubeSearchFragment : Fragment() {
                 false
             }
         }
-
-        setupSortBar(view)
         return view
     }
 
-    /** Client-side sort of loaded results (YouTube search sort isn't offered by the API). */
-    private fun setupSortBar(view: View) {
-        val bar = view.findViewById<LinearLayout>(R.id.youtube_sort_bar)
-        val modes = listOf(
-            SortMode.RELEVANCE to getString(R.string.youtube_sort_relevance),
-            SortMode.DATE to getString(R.string.youtube_sort_date),
-            SortMode.VIEWS to getString(R.string.youtube_sort_views)
-        )
-        for ((mode, label) in modes) {
-            val chip = TextView(requireContext())
-            chip.text = label
-            chip.setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.normal_text))
-            chip.setPadding(24, 10, 24, 10)
-            chip.setOnClickListener {
-                sortMode = mode
-                highlightSort(bar, it)
-                submitOrdered()
-            }
-            bar.addView(chip)
-            if (mode == SortMode.RELEVANCE) highlightSort(bar, chip)
-        }
+    /** Re-orders the currently loaded results with the sort chosen in the toolbar. */
+    fun applySort() {
+        if (isAdded) submitOrdered()
     }
 
-    private fun highlightSort(bar: LinearLayout, selected: View) {
-        for (i in 0 until bar.childCount) {
-            val c = bar.getChildAt(i) as TextView
-            c.setTextColor(
-                if (c === selected) ContextCompat.getColor(requireContext(), R.color.primary_red)
-                else ContextCompat.getColor(requireContext(), R.color.white)
-            )
-        }
+    /** Toolbar History: return to an empty search screen (recent list added separately). */
+    fun onHistoryRequested() {
+        if (!isAdded) return
+        input.setText("")
+        allItems.clear()
+        adapter.setItems(emptyList())
     }
 
     private fun onItemClicked(item: YtItem) {
@@ -132,10 +102,10 @@ class YoutubeSearchFragment : Fragment() {
         val channels = allItems.filter { it.kind == YtKind.CHANNEL }
         val playlists = allItems.filter { it.kind == YtKind.PLAYLIST }
         val videos = allItems.filter { it.kind == YtKind.STREAM }
-        val sortedVideos = when (sortMode) {
-            SortMode.DATE -> videos.sortedByDescending { it.uploadedMillis ?: Long.MIN_VALUE }
-            SortMode.VIEWS -> videos.sortedByDescending { it.viewCount }
-            SortMode.RELEVANCE -> videos
+        val sortedVideos = when (YoutubeSort.mode) {
+            YoutubeSort.Mode.DATE -> videos.sortedByDescending { it.uploadedMillis ?: Long.MIN_VALUE }
+            YoutubeSort.Mode.VIEWS -> videos.sortedByDescending { it.viewCount }
+            YoutubeSort.Mode.RELEVANCE -> videos
         }
         adapter.setItems(channels + playlists + sortedVideos)
     }

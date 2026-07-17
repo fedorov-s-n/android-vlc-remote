@@ -44,4 +44,20 @@ class YoutubeFragment : Fragment() {
         }
         return false
     }
+
+    /** Toolbar History: return to the search screen. */
+    fun showHistory() {
+        while (childFragmentManager.backStackEntryCount > 0) {
+            childFragmentManager.popBackStackImmediate()
+        }
+        searchFragment()?.onHistoryRequested()
+    }
+
+    /** Toolbar sort: re-order the search results with the current sort. */
+    fun applySort() {
+        searchFragment()?.applySort()
+    }
+
+    private fun searchFragment(): YoutubeSearchFragment? =
+        childFragmentManager.fragments.firstOrNull { it is YoutubeSearchFragment } as? YoutubeSearchFragment
 }
