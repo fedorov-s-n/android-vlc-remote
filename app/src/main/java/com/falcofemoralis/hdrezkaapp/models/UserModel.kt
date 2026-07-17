@@ -53,7 +53,7 @@ object UserModel {
         data["login_password"] = password
         data["login_not_save"] = "0"
 
-        val res: Connection.Response = BaseModel.getJsoup(SettingsData.provider + LOGIN_AJAX)
+        val res = BaseModel.getJsoup(SettingsData.provider + LOGIN_AJAX)
             .data(data)
             .method(Connection.Method.POST)
             .execute()
@@ -80,7 +80,7 @@ object UserModel {
         val data: ArrayMap<String, String> = ArrayMap()
         data["data"] = "email=$email&prevent_autofill_name=&name=$username&prevent_autofill_password1=&password1=$password&rules=1&submit_reg=submit_reg&do=register"
 
-        val res: Connection.Response = BaseModel.getJsoup(SettingsData.provider + REGISTER_AJAX)
+        val res = BaseModel.getJsoup(SettingsData.provider + REGISTER_AJAX)
             .data(data)
             .method(Connection.Method.POST)
             .execute()

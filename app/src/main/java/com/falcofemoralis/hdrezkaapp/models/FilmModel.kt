@@ -142,6 +142,13 @@ object FilmModel {
         }
     }
 
+    /** Extracts the numeric film id from a film URL, e.g. .../1154-title.html -> 1154. */
+    private fun parseFilmIdFromLink(link: String?): Int? {
+        if (link.isNullOrEmpty()) return null
+        val lastSegment = link.trimEnd('/').substringAfterLast('/')
+        return lastSegment.takeWhile { it.isDigit() }.toIntOrNull()
+    }
+
     private fun parseTable(document: Document, film: Film) {
         val table: Elements = document.select(FILM_TABLE_INFO)
         // Parse info table
@@ -183,7 +190,11 @@ object FilmModel {
         film.votesKP = document.select("span.kp i").text()
         film.votesWA = document.select("span.wa i").text()
         film.runtime = document.select("td[itemprop=duration]").text()
-        film.filmId = document.select("div.b-userset__fav_holder").attr("data-post_id").toInt()
+        // Prefer the page's post id, but fall back to the id embedded in the URL
+        // (e.g. .../1154-title.html -> 1154) so a missing/changed element does not
+        // break opening the film page.
+        film.filmId = document.select("div.b-userset__fav_holder").attr("data-post_id").toIntOrNull()
+            ?: parseFilmIdFromLink(film.filmLink)
 
         parseTable(document, film)
 
@@ -192,9 +203,11 @@ object FilmModel {
         film.votesHR = hrRatingEl.select("span.votes span").text()
         film.isHRratingActive = hrRatingEl.select("div.b-post__rating_wrapper").isNullOrEmpty()
 
-        val posterElement: Element = document.select(FILM_POSTER)[0]
-        film.fullSizePosterPath = posterElement.attr("href")
-        film.posterPath = posterElement.select("img").attr("src")
+        val posterElement: Element? = document.select(FILM_POSTER).firstOrNull()
+        if (posterElement != null) {
+            film.fullSizePosterPath = posterElement.attr("href")
+            film.posterPath = posterElement.select("img").attr("src")
+        }
 
         val actors: ArrayList<Actor> = ArrayList()
         val directors: ArrayList<Actor> = ArrayList()
@@ -328,7 +341,7 @@ object FilmModel {
         film.bookmarks = bookmarks
 
         // get streams
-        film.isMovieTranslation = document.select("meta[property=og:type]").first().attr("content").equals("video.movie")
+        film.isMovieTranslation = document.select("meta[property=og:type]").first()?.attr("content") == "video.movie"
         val filmTranslations: ArrayList<Voice> = ArrayList()
         val els = document.select(".b-translator__item")
         for (el in els) {

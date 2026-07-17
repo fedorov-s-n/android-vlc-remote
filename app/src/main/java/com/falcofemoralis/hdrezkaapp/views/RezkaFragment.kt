@@ -1,9 +1,14 @@
 package com.falcofemoralis.hdrezkaapp.views
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
@@ -15,6 +20,7 @@ import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
 import com.falcofemoralis.hdrezkaapp.interfaces.OnFragmentInteractionListener.Action
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.objects.UserData
+import com.falcofemoralis.hdrezkaapp.utils.WebViewHttp
 import com.falcofemoralis.hdrezkaapp.views.fragments.ViewPagerFragment
 import com.jakewharton.processphoenix.ProcessPhoenix
 import com.squareup.picasso.Picasso
@@ -38,6 +44,9 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     private var currentFragment: Fragment? = null
     private var isSettingsOpened = false
     private var initialized = false
+    private var loaded = false
+    private val proceedHandler = Handler(Looper.getMainLooper())
+    private val proceedRunnable = Runnable { proceedToContent() }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         rootView = inflater.inflate(R.layout.fragment_rezka, container, false)
@@ -90,10 +99,85 @@ class RezkaFragment : Fragment(), HdrezkaHost {
         // NOTE: the avatar normally opens hdrezka Settings (a PreferenceFragmentCompat).
         // That needs `preferenceTheme` on the host theme and is deferred for now.
 
+        if (WEBVIEW_WARMUP_ENABLED) {
+            warmUpThenLoad()
+        } else {
+            proceedToContent()
+        }
+    }
+
+    /**
+     * Loads the mirror once in a hidden WebView so it can clear the site's anti-bot
+     * (Cloudflare) check and populate cookies (cf_clearance). The jsoup/OkHttp calls
+     * then reuse those cookies (BaseModel attaches CookieManager cookies). DNS keeps
+     * going through DoH. Falls back to loading content directly if warm-up stalls.
+     */
+    private fun warmUpThenLoad() {
+        val provider = SettingsData.provider
+        val webView = view?.findViewById<WebView>(R.id.rezka_wv)
+        if (provider.isNullOrEmpty() || webView == null) {
+            proceedToContent()
+            return
+        }
+
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        try {
+            cookieManager.setAcceptThirdPartyCookies(webView, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        // Use the WebView UA everywhere so cf_clearance (bound to UA) stays valid
+        // for the jsoup/OkHttp requests too.
+        SettingsData.useragent = webView.settings.userAgentString
+
+        // Route hdrezka requests through this WebView (same-origin fetch) so they pass
+        // Cloudflare. Requests only start after the origin has loaded (see proceed).
+        WebViewHttp.attach(webView)
+        WebViewHttp.enabled = true
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                cookieManager.flush()
+                // Re-arm after each navigation (challenge page -> real page); proceed
+                // once things settle.
+                proceedHandler.removeCallbacks(proceedRunnable)
+                proceedHandler.postDelayed(proceedRunnable, 2500)
+            }
+        }
+
+        webView.loadUrl(provider)
+        // Absolute safety net so the tab is never stuck if warm-up never settles.
+        proceedHandler.postDelayed(proceedRunnable, 12000)
+    }
+
+    private fun proceedToContent() {
+        if (loaded) return
+        loaded = true
+        proceedHandler.removeCallbacks(proceedRunnable)
         loadMain()
     }
 
+    override fun onDestroyView() {
+        proceedHandler.removeCallbacks(proceedRunnable)
+        view?.findViewById<WebView>(R.id.rezka_wv)?.let { WebViewHttp.detach(it) }
+        WebViewHttp.enabled = false
+        super.onDestroyView()
+    }
+
     companion object {
+        /**
+         * Master switch for the hidden-WebView anti-bot (Cloudflare) bypass.
+         * true  = load the mirror in a hidden WebView and route all hdrezka HTTP
+         *         requests through it (same-origin fetch) so they pass Cloudflare.
+         * false = load hdrezka content directly via OkHttp/DoH (will hit Cloudflare
+         *         403/challenge on protected mirrors), original behaviour.
+         */
+        const val WEBVIEW_WARMUP_ENABLED = true
+
         /** Key of the HDrezka mirror preference on the VLC settings screen. */
         const val PROVIDER_PREF_KEY = "hdrezka_provider"
         const val DEFAULT_PROVIDER = "https://rezka.ag"

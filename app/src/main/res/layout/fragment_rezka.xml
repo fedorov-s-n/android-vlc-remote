@@ -55,4 +55,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Hidden WebView used to pass the mirror's anti-bot (Cloudflare) check and
+         obtain cf_clearance cookies for the jsoup/OkHttp calls. -->
+    <WebView
+        android:id="@+id/rezka_wv"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible" />
+
 </LinearLayout>

@@ -85,10 +85,14 @@ open class FilmsListFragment : Fragment(), FilmsListView {
     }
 
     override fun setFilms(films: ArrayList<Film>) {
+        // The view may be recreated (e.g. VLC rebuilds the ViewPager) while a
+        // presenter still holds cached films; ignore calls before the view is ready.
+        if (!::recyclerView.isInitialized) return
         recyclerView.adapter = FilmsListRecyclerViewAdapter(films, ::listCallback, ::listEndCallback)
     }
 
     override fun redrawFilms(from: Int, count: Int, action: AdapterAction, films: ArrayList<Film>) {
+        if (!::recyclerView.isInitialized) return
         when (action) {
             AdapterAction.ADD -> recyclerView.adapter?.notifyItemRangeInserted(from, count)
             AdapterAction.UPDATE -> recyclerView.adapter?.notifyItemRangeChanged(from, count)
@@ -98,6 +102,7 @@ open class FilmsListFragment : Fragment(), FilmsListView {
     }
 
     override fun setProgressBarState(type: IProgressState.StateType) {
+        if (!::progressBar.isInitialized) return
         progressBar.visibility = when (type) {
             IProgressState.StateType.LOADED -> View.GONE
             IProgressState.StateType.LOADING -> View.VISIBLE

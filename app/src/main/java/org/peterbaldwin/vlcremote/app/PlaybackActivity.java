@@ -175,6 +175,12 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         Preferences pref = Preferences.get(this);
         isHideDVDTab = pref.isHideDVDTabSet();
         String authority = pref.getAuthority();
+        // Clean up a bad authority previously written by mistaking an hdrezka
+        // preference key for a VLC server (see PickServerFragment fall-through).
+        if ("hdrezka_provider".equals(authority)) {
+            pref.setAuthority(null);
+            authority = null;
+        }
         if (authority != null) {
             mMediaServer = new MediaServer(this, authority);
             setServerSubtitle(pref.isServerSubtitleSet());

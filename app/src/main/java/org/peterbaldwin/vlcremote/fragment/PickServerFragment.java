@@ -318,7 +318,10 @@ public final class PickServerFragment extends PreferenceFragment implements Port
                Preferences.isButtonKey(preferenceKey)                ||
                Preferences.KEY_SEEK_TIME.equals(preferenceKey)       ||
                Preferences.KEY_AUDIO_DELAY.equals(preferenceKey)     ||
-               Preferences.KEY_SUBTITLE_DELAY.equals(preferenceKey);
+               Preferences.KEY_SUBTITLE_DELAY.equals(preferenceKey)  ||
+               // hdrezka settings: use default preference handling instead of the
+               // server-selection fall-through below.
+               "hdrezka_provider".equals(preferenceKey);
     }
 
     @Override
