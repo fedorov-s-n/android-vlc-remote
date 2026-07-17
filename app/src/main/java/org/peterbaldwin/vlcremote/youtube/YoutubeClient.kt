@@ -143,7 +143,7 @@ object YoutubeClient {
         // (they report a duration); video-only DASH streams need an audio slave and the
         // timeline/seek may not work on them, so the fragment defaults to the best muxed one.
         val muxed = info.videoStreams.filter { it.content != null }
-            .map { YtQuality(it.resolution ?: "?", it.content, false) }
+            .map { YtQuality((it.resolution ?: "?") + " ♪", it.content, false) }
         val videoOnly = info.videoOnlyStreams.filter { it.content != null }
             .map { YtQuality(it.resolution ?: "?", it.content, true) }
         val qualities = (muxed + videoOnly).sortedByDescending { resolutionValue(it.label) }
