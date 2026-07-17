@@ -116,10 +116,11 @@ class YoutubeVideoFragment : Fragment() {
         val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
         subtitleSpinner.adapter = spinnerAdapter(subLabels)
 
-        // Defaults, same reasoning as the rezka tab: prefer 1080p (else the highest, which
-        // is already first since qualities are sorted descending) and English subtitles.
-        val q1080 = v.qualities.indexOfFirst { it.label.startsWith("1080") }
-        if (q1080 > 0) qualitySpinner.setSelection(q1080)
+        // Default to the highest muxed (progressive) quality: those are the only streams VLC
+        // can seek within and show a timeline for. Higher video-only qualities stay selectable
+        // (labelled "no seek") for anyone who wants max resolution over seeking.
+        val bestMuxed = v.qualities.indexOfFirst { !it.isVideoOnly }
+        if (bestMuxed > 0) qualitySpinner.setSelection(bestMuxed)
         val engSub = v.subtitles.indexOfFirst { it.label.contains("english", true) }
         if (engSub >= 0) subtitleSpinner.setSelection(engSub + 1) // +1 for "no subtitles" at index 0
     }

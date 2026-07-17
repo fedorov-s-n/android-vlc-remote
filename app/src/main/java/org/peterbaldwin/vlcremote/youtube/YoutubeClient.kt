@@ -139,10 +139,13 @@ object YoutubeClient {
         ensureInit()
         val info = StreamInfo.getInfo(ServiceList.YouTube, url)
 
+        // Muxed (progressive) streams carry their own audio and are fully seekable in VLC
+        // (they report a duration); video-only DASH streams are not seekable and have no
+        // duration, so they need an audio slave and the timeline/seek won't work on them.
         val muxed = info.videoStreams.filter { it.content != null }
-            .map { YtQuality((it.resolution ?: "?") + " ♪", it.content, false) }
+            .map { YtQuality(it.resolution ?: "?", it.content, false) }
         val videoOnly = info.videoOnlyStreams.filter { it.content != null }
-            .map { YtQuality(it.resolution ?: "?", it.content, true) }
+            .map { YtQuality((it.resolution ?: "?") + " (no seek)", it.content, true) }
         val qualities = (muxed + videoOnly).sortedByDescending { resolutionValue(it.label) }
 
         val audios = info.audioStreams.filter { it.content != null }.map {
