@@ -241,12 +241,12 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     
     private void setupTabHost() {
         mTabHost.setup();
-        addTab(TAB_MEDIA, R.string.nowplaying_title, R.drawable.ic_tab_artists);
-        addTab(TAB_PLAYLIST, R.string.tab_playlist, R.drawable.ic_tab_playlists);
-        addTab(TAB_BROWSE, R.string.goto_start, R.drawable.ic_tab_playback);
+        addTab(TAB_MEDIA, R.string.nowplaying_title, R.drawable.ic_tab_nowplaying);
+        addTab(TAB_PLAYLIST, R.string.tab_playlist, R.drawable.ic_tab_queue);
+        addTab(TAB_BROWSE, R.string.goto_start, R.drawable.ic_tab_folder);
         addTab(TAB_HDREZKA, R.string.tab_hdrezka, R.drawable.ic_baseline_local_movies_24);
         addTab(TAB_YOUTUBE, R.string.tab_youtube, R.drawable.ic_tab_youtube);
-        addTab(TAB_NAVIGATION, R.string.tab_dvd, R.drawable.ic_tab_albums);
+        addTab(TAB_NAVIGATION, R.string.tab_dvd, R.drawable.ic_tab_disc);
         if(isHideDVDTab) {
             mTabHost.getTabWidget().removeView(mTabHost.getTabWidget().getChildTabViewAt(TAB_NAVIGATION_INDEX));
         }
@@ -257,7 +257,8 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     private void addTab(String tag, int label, int icon) {
         TabHost.TabSpec spec = mTabHost.newTabSpec(tag);
         spec.setContent(new TabFactory(this));
-        spec.setIndicator(getText(label), getResources().getDrawable(icon));
+        // Icon-only tabs (no text label).
+        spec.setIndicator("", getResources().getDrawable(icon));
         mTabHost.addTab(spec);
         mTabSpecList.add(spec);
     }
