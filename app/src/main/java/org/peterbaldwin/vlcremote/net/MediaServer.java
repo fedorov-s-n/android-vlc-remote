@@ -296,6 +296,23 @@ public final class MediaServer {
                     execute(query);
                 }
 
+                /**
+                 * Plays {@code input} with each of {@code options} passed as a URL-encoded
+                 * {@code option} parameter (never appended to the MRL), so option values with
+                 * spaces/special characters can't corrupt the stream URL.
+                 */
+                public void playWithOptions(String input, List<String> options) {
+                    String query = "command=in_play&input=" + Uri.encode(input);
+                    if (options != null) {
+                        for (String option : options) {
+                            if (option != null && !option.isEmpty()) {
+                                query += "&option=" + Uri.encode(option);
+                            }
+                        }
+                    }
+                    execute(query);
+                }
+
 
                 public void subtitles(String input) {
                     String query = "command=addsubtitle&val=" + Uri.encode(input);

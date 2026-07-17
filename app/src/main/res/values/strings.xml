@@ -217,6 +217,10 @@
     <string name="youtube_section_playlists">Playlists</string>
     <string name="youtube_section_videos">Videos</string>
     <string name="youtube_subscribers">%1$d subscribers</string>
+    <string name="youtube_quality">Quality</string>
+    <string name="youtube_audio">Audio</string>
+    <string name="youtube_subtitles">Subtitles</string>
+    <string name="youtube_subtitle_off">No subtitles</string>
     <string name="youtube_history">History</string>
     <string name="youtube_history_cleared">History cleared</string>
     <string name="pref_youtube_history_size_title">History size</string>

@@ -16,6 +16,16 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <ImageView
+                android:id="@+id/youtube_video_thumb"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:adjustViewBounds="true"
+                android:background="#20FFFFFF"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter" />
+
             <TextView
                 android:id="@+id/youtube_video_title"
                 android:layout_width="match_parent"
@@ -33,11 +43,56 @@
                 android:textColor="@color/primary_red"
                 android:textSize="@dimen/normal_text" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/youtube_quality"
+                android:textColor="@color/white"
+                android:textSize="@dimen/small_text" />
+
             <Spinner
                 android:id="@+id/youtube_video_quality"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_spinner"
+                android:minHeight="48dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="40dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/youtube_audio"
+                android:textColor="@color/white"
+                android:textSize="@dimen/small_text" />
+
+            <Spinner
+                android:id="@+id/youtube_video_audio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_spinner"
+                android:minHeight="48dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="40dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/youtube_subtitles"
+                android:textColor="@color/white"
+                android:textSize="@dimen/small_text" />
+
+            <Spinner
+                android:id="@+id/youtube_video_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:background="@drawable/bg_spinner"
                 android:minHeight="48dp"
                 android:paddingStart="12dp"

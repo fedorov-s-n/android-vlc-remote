@@ -5,14 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.text.HtmlCompat
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -26,6 +29,8 @@ class YoutubeVideoFragment : Fragment() {
     private lateinit var scroll: NestedScrollView
     private lateinit var progress: View
     private lateinit var qualitySpinner: Spinner
+    private lateinit var audioSpinner: Spinner
+    private lateinit var subtitleSpinner: Spinner
     private lateinit var commentsAdapter: YoutubeCommentAdapter
 
     private var video: YtVideo? = null
@@ -39,6 +44,8 @@ class YoutubeVideoFragment : Fragment() {
         scroll = view.findViewById(R.id.youtube_video_scroll)
         progress = view.findViewById(R.id.youtube_video_progress)
         qualitySpinner = view.findViewById(R.id.youtube_video_quality)
+        audioSpinner = view.findViewById(R.id.youtube_video_audio)
+        subtitleSpinner = view.findViewById(R.id.youtube_video_subtitle)
         view.findViewById<TextView>(R.id.youtube_video_play).setOnClickListener { playInVlc() }
 
         commentsAdapter = YoutubeCommentAdapter()
@@ -97,11 +104,21 @@ class YoutubeVideoFragment : Fragment() {
                 )
             }
         }
-        view.findViewById<TextView>(R.id.youtube_video_description).text = v.description
+        view.findViewById<TextView>(R.id.youtube_video_description).text =
+            HtmlCompat.fromHtml(v.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
 
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, v.qualities.map { it.label })
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        qualitySpinner.adapter = adapter
+        v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
+
+        qualitySpinner.adapter = spinnerAdapter(v.qualities.map { it.label })
+        audioSpinner.adapter = spinnerAdapter(v.audios.map { it.label })
+        val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
+        subtitleSpinner.adapter = spinnerAdapter(subLabels)
+    }
+
+    private fun spinnerAdapter(items: List<String>): ArrayAdapter<String> {
+        val a = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, items)
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        return a
     }
 
     private fun loadComments() {
@@ -153,8 +170,25 @@ class YoutubeVideoFragment : Fragment() {
             Toast.makeText(requireContext(), getString(R.string.youtube_no_server), Toast.LENGTH_LONG).show()
             return
         }
+
+        val options = ArrayList<String>()
+        options.add(":meta-title=" + v.title)
+        // A video-only stream has no audio of its own; attach the selected audio track.
+        if (quality.isVideoOnly) {
+            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let {
+                options.add(":input-slave=" + it.url)
+            }
+        }
+        // Subtitle spinner index 0 is "no subtitles".
+        val subPos = subtitleSpinner.selectedItemPosition
+        if (subPos > 0) {
+            v.subtitles.getOrNull(subPos - 1)?.let {
+                options.add(":sub-file=" + it.url)
+            }
+        }
+
         RezkaPlayback.clear()
-        MediaServer(requireContext(), authority).status().command.input.playWithMetaTitle(quality.url, v.title)
+        MediaServer(requireContext(), authority).status().command.input.playWithOptions(quality.url, options)
         Toast.makeText(requireContext(), getString(R.string.youtube_sent), Toast.LENGTH_SHORT).show()
     }
 
