@@ -33,9 +33,11 @@ class YoutubeSearchFragment : Fragment() {
     private lateinit var input: EditText
     private lateinit var clear: ImageView
 
+    private enum class SortMode { RELEVANCE, DATE, VIEWS }
+
     private val allItems = ArrayList<YtItem>()
     private var query: String = ""
-    private var sortFilter: String? = null
+    private var sortMode = SortMode.RELEVANCE
     private var isLoading = false
     private var hasMore = false
 
@@ -84,25 +86,26 @@ class YoutubeSearchFragment : Fragment() {
         return view
     }
 
-    /** Builds sort chips only if YouTube exposes sort filters. */
+    /** Client-side sort of loaded results (YouTube search sort isn't offered by the API). */
     private fun setupSortBar(view: View) {
-        val filters = YoutubeClient.availableSortFilters()
-        if (filters.isEmpty()) return
-        view.findViewById<View>(R.id.youtube_sort_scroll).visibility = View.VISIBLE
         val bar = view.findViewById<LinearLayout>(R.id.youtube_sort_bar)
-        val options = listOf<String?>(null) + filters // null = default
-        for (option in options) {
+        val modes = listOf(
+            SortMode.RELEVANCE to getString(R.string.youtube_sort_relevance),
+            SortMode.DATE to getString(R.string.youtube_sort_date),
+            SortMode.VIEWS to getString(R.string.youtube_sort_views)
+        )
+        for ((mode, label) in modes) {
             val chip = TextView(requireContext())
-            chip.text = option ?: getString(R.string.youtube_sort_default)
+            chip.text = label
             chip.setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.normal_text))
             chip.setPadding(24, 10, 24, 10)
             chip.setOnClickListener {
-                sortFilter = option
+                sortMode = mode
                 highlightSort(bar, it)
-                if (query.isNotEmpty()) doSearch(query)
+                submitOrdered()
             }
             bar.addView(chip)
-            if (option == null) highlightSort(bar, chip)
+            if (mode == SortMode.RELEVANCE) highlightSort(bar, chip)
         }
     }
 
@@ -125,14 +128,16 @@ class YoutubeSearchFragment : Fragment() {
         }
     }
 
-    private fun kindOrder(kind: YtKind): Int = when (kind) {
-        YtKind.CHANNEL -> 0
-        YtKind.PLAYLIST -> 1
-        YtKind.STREAM -> 2
-    }
-
     private fun submitOrdered() {
-        adapter.setItems(allItems.sortedBy { kindOrder(it.kind) })
+        val channels = allItems.filter { it.kind == YtKind.CHANNEL }
+        val playlists = allItems.filter { it.kind == YtKind.PLAYLIST }
+        val videos = allItems.filter { it.kind == YtKind.STREAM }
+        val sortedVideos = when (sortMode) {
+            SortMode.DATE -> videos.sortedByDescending { it.uploadedMillis ?: Long.MIN_VALUE }
+            SortMode.VIEWS -> videos.sortedByDescending { it.viewCount }
+            SortMode.RELEVANCE -> videos
+        }
+        adapter.setItems(channels + playlists + sortedVideos)
     }
 
     private fun doSearch(q: String) {
@@ -142,7 +147,7 @@ class YoutubeSearchFragment : Fragment() {
         progress.visibility = View.VISIBLE
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                val page = YoutubeClient.search(q, sortFilter)
+                val page = YoutubeClient.search(q)
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     allItems.clear()

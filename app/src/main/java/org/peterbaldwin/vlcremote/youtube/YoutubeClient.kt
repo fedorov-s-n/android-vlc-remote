@@ -26,7 +26,9 @@ data class YtItem(
     val url: String,
     val subtitle: String,
     val thumbnailUrl: String?,
-    val duration: Long
+    val duration: Long,
+    val viewCount: Long = -1,
+    val uploadedMillis: Long? = null
 )
 
 /** One page of list items plus whether more can be loaded. */
@@ -83,21 +85,9 @@ object YoutubeClient {
 
     // ---- Search (streams + channels + playlists) ----
 
-    /** Sort filters YouTube search actually offers (often none), for optional sort buttons. */
-    fun availableSortFilters(): List<String> = try {
+    fun search(query: String): YtPage {
         ensureInit()
-        ServiceList.YouTube.searchQHFactory.availableSortFilter.toList()
-    } catch (e: Exception) {
-        emptyList()
-    }
-
-    fun search(query: String, sortFilter: String? = null): YtPage {
-        ensureInit()
-        val ex = if (sortFilter.isNullOrEmpty()) {
-            ServiceList.YouTube.getSearchExtractor(query)
-        } else {
-            ServiceList.YouTube.getSearchExtractor(query, emptyList(), sortFilter)
-        }
+        val ex = ServiceList.YouTube.getSearchExtractor(query)
         ex.fetchPage()
         searchExtractor = ex
         val page = ex.initialPage
@@ -206,9 +196,19 @@ object YoutubeClient {
         for (item in items) {
             val thumb = item.thumbnails.maxByOrNull { it.width }?.url
             when (item) {
-                is StreamInfoItem -> result.add(
-                    YtItem(YtKind.STREAM, item.name ?: "", item.url ?: "", item.uploaderName ?: "", thumb, item.duration)
-                )
+                is StreamInfoItem -> {
+                    val uploaded = try {
+                        item.uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli()
+                    } catch (e: Exception) {
+                        null
+                    }
+                    result.add(
+                        YtItem(
+                            YtKind.STREAM, item.name ?: "", item.url ?: "", item.uploaderName ?: "",
+                            thumb, item.duration, item.viewCount, uploaded
+                        )
+                    )
+                }
                 is ChannelInfoItem -> result.add(
                     YtItem(YtKind.CHANNEL, item.name ?: "", item.url ?: "", "Channel", thumb, -1)
                 )

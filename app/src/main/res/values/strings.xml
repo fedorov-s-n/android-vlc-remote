@@ -213,7 +213,9 @@
     <string name="youtube_sent">Sent to VLC</string>
     <string name="youtube_error">YouTube error</string>
     <string name="youtube_play">Play in VLC</string>
-    <string name="youtube_sort_default">Default</string>
+    <string name="youtube_sort_relevance">Relevance</string>
+    <string name="youtube_sort_date">Date</string>
+    <string name="youtube_sort_views">Views</string>
     <string name="youtube_comments">Comments</string>
     <string name="youtube_likes">&#128077; %d</string>
 
