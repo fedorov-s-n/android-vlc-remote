@@ -126,10 +126,8 @@ class YoutubeSearchFragment : Fragment() {
     }
 
     private fun submitOrdered() {
-        val channels = allItems.filter { it.kind == YtKind.CHANNEL }
-        val playlists = allItems.filter { it.kind == YtKind.PLAYLIST }
-        val videos = allItems.filter { it.kind == YtKind.STREAM }
-        adapter.setItems(channels + playlists + videos)
+        // Keep YouTube's own result order (no channels/playlists/videos grouping).
+        adapter.setItems(allItems)
     }
 
     private fun doSearch(q: String) {
