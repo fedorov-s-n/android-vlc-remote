@@ -52,9 +52,9 @@ object RezkaPlayback {
     }
 
     /** Plays a movie stream; clears any series context. */
-    fun playMovie(context: Context, authority: String, stream: Stream, subtitle: Subtitle?) {
+    fun playMovie(context: Context, authority: String, film: Film, stream: Stream, subtitle: Subtitle?) {
         clear()
-        doPlay(context, authority, stream.url, subtitle)
+        doPlay(context, authority, stream.url, withQuality(baseTitle(film), stream.quality), subtitle)
     }
 
     /** Plays a series episode and remembers the context for next/previous navigation. */
@@ -66,8 +66,23 @@ object RezkaPlayback {
         this.qualityLabel = stream.quality
         this.subtitleLang = subtitle?.lang
         this.authority = authority
-        doPlay(context, authority, stream.url, subtitle)
+        doPlay(context, authority, stream.url, episodeTitle(film, season, episode, stream.quality), subtitle)
     }
+
+    /** Prefer the original (usually Latin) title to keep the VLC title ASCII-safe. */
+    private fun baseTitle(film: Film): String =
+        film.origTitle?.takeIf { it.isNotBlank() } ?: film.title ?: ""
+
+    /** e.g. "The Big Bang Theory - S1 E1 1080p" (ASCII separator, digits, quality). */
+    private fun episodeTitle(film: Film, season: String, episode: String, quality: String?): String {
+        val base = baseTitle(film)
+        val t = (if (base.isBlank()) "" else "$base - ") + "S$season E$episode"
+        return withQuality(t, quality)
+    }
+
+    /** Appends the quality label to the title, e.g. "… 1080p". */
+    private fun withQuality(title: String, quality: String?): String =
+        if (quality.isNullOrBlank()) title else if (title.isBlank()) quality else "$title $quality"
 
     /** @return true if an adjacent episode exists and playback of it was started. */
     @JvmStatic
@@ -129,7 +144,7 @@ object RezkaPlayback {
 
                     season = newSeason
                     episode = newEpisode
-                    doPlay(context, auth, stream.url, subtitle)
+                    doPlay(context, auth, stream.url, episodeTitle(f, newSeason, newEpisode, stream.quality), subtitle)
 
                     val subLabel = subtitle?.lang ?: context.getString(R.string.msg_subtitle_off)
                     HdrezkaHistory.updateSelections(context, f.filmLink, v.name, newSeason, newEpisode, stream.quality, subLabel)
@@ -140,9 +155,11 @@ object RezkaPlayback {
         }
     }
 
-    private fun doPlay(context: Context, authority: String, streamUrl: String, subtitle: Subtitle?) {
+    private fun doPlay(context: Context, authority: String, streamUrl: String, title: String?, subtitle: Subtitle?) {
         val server = MediaServer(context, authority)
-        server.status().command.input.play(streamUrl)
+        // Title rides only in the URL-encoded :meta-title option (not the MRL), so it can't
+        // corrupt the stream URL; VLC then shows it in the now-playing for any stream.
+        server.status().command.input.playWithMetaTitle(streamUrl, title)
         if (subtitle != null) {
             attachSubtitle(context, server, authority, subtitle)
         }

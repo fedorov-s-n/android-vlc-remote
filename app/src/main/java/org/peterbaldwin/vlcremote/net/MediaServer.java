@@ -282,6 +282,20 @@ public final class MediaServer {
                     execute(query);
                 }
 
+                /**
+                 * Plays {@code input} and forces its displayed title via {@code :meta-title}.
+                 * The MRL is kept clean (title goes only in a separate, URL-encoded
+                 * {@code option} parameter, VLC 1.1.11+) so a title with spaces/special
+                 * characters can't corrupt the MRL and break playback.
+                 */
+                public void playWithMetaTitle(String input, String metaTitle) {
+                    String query = "command=in_play&input=" + Uri.encode(input);
+                    if (metaTitle != null && !metaTitle.isEmpty()) {
+                        query += "&option=" + Uri.encode(":meta-title=" + metaTitle);
+                    }
+                    execute(query);
+                }
+
 
                 public void subtitles(String input) {
                     String query = "command=addsubtitle&val=" + Uri.encode(input);

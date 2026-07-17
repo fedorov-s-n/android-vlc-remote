@@ -283,7 +283,7 @@ class FilmFragment : Fragment(), FilmView {
             val episode = selEpisodes.getOrNull(episodeSpinner.selectedItemPosition) ?: ""
             RezkaPlayback.playSeries(requireContext(), authority, filmPresenter.film, voice, season, episode, stream, subtitle)
         } else {
-            RezkaPlayback.playMovie(requireContext(), authority, stream, subtitle)
+            RezkaPlayback.playMovie(requireContext(), authority, filmPresenter.film, stream, subtitle)
         }
 
         Toast.makeText(requireContext(), getString(R.string.vlc_sent), Toast.LENGTH_SHORT).show()
