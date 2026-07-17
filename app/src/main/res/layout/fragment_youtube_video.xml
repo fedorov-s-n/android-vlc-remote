@@ -63,6 +63,7 @@
                 android:paddingBottom="12dp" />
 
             <TextView
+                android:id="@+id/youtube_video_audio_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"

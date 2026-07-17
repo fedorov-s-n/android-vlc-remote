@@ -201,6 +201,12 @@
     <string name="pref_hdrezka_sub_server_host_summary">Helper server host. Leave empty to use the VLC server\'s address</string>
     <string name="pref_hdrezka_sub_server_port_title">Subtitle server port</string>
     <string name="pref_hdrezka_sub_server_port_summary">Helper server port (default 3900)</string>
+    <string name="pref_helper_enabled_title">Playback helper (vlc-helper.py)</string>
+    <string name="pref_helper_enabled_summary">Run vlc-helper.py on the VLC machine. Required for high-quality (DASH) YouTube playback and subtitles. Shared with the rezka tab.</string>
+    <string name="pref_helper_host_title">Helper address</string>
+    <string name="pref_helper_host_summary">Host running vlc-helper.py. Leave empty to use the VLC server\'s address</string>
+    <string name="pref_helper_port_title">Helper port</string>
+    <string name="pref_helper_port_summary">Helper server port (default 3900)</string>
     <string name="pref_hdrezka_history_size_title">History size</string>
     <string name="pref_hdrezka_history_size_summary">Number of recently opened films to keep (default 15)</string>
     <string name="pref_hdrezka_clear_history_title">Clear history</string>
@@ -218,6 +224,8 @@
     <string name="youtube_section_videos">Videos</string>
     <string name="youtube_subscribers">%1$d subscribers</string>
     <string name="youtube_quality">Quality</string>
+    <string name="youtube_quality_best">Best (HD, downloads)</string>
+    <string name="youtube_downloading">Preparing HD download…</string>
     <string name="youtube_audio">Audio</string>
     <string name="youtube_subtitles">Subtitles</string>
     <string name="youtube_subtitle_off">No subtitles</string>

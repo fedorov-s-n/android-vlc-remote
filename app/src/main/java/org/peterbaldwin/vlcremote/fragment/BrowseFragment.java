@@ -139,6 +139,7 @@ public class BrowseFragment extends MediaListFragment implements
         } else {
             com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
             org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear();
+            org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
             getMediaServer().status().command.input.play(file.getMrl(), file.getOptions());
         }
     }
@@ -287,6 +288,7 @@ public class BrowseFragment extends MediaListFragment implements
                     }
                     com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
             org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear();
+            org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
                     getMediaServer().status().command.input.play(File.getMrl(dirs.get(0), file.getExtension()), file.getOptions());
                     for(int i = 1; i < dirs.size(); i++) {
                         getMediaServer().status().command.input.enqueue(File.getMrl(dirs.get(i), file.getExtension()));

@@ -72,6 +72,68 @@ public class DownloadPathClient {
         }.execute();
     }
 
+    /**
+     * Uploads {@code content} to the helper, which writes it to a temp file on the VLC host
+     * and returns the local path. Used for generated DASH manifests (VLC needs a readable
+     * .mpd file, not a URL). Endpoint: POST /content?name=...
+     */
+    public static void saveContent(
+            final String serverHost,
+            final int serverPort,
+            final String name,
+            final byte[] content,
+            final Callback callback
+    ) {
+        new AsyncTask<Void, Void, Result>() {
+            @Override
+            protected Result doInBackground(Void... voids) {
+                HttpURLConnection conn = null;
+                String body = null;
+                try {
+                    String qName = URLEncoder.encode(name, "UTF-8");
+                    String full = "http://" + serverHost + ":" + serverPort + "/content?name=" + qName;
+                    URL url = new URL(full);
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setConnectTimeout(10_000);
+                    conn.setReadTimeout(30_000);
+                    conn.setUseCaches(false);
+                    conn.setDoOutput(true);
+                    conn.setFixedLengthStreamingMode(content.length);
+                    conn.setRequestProperty("Content-Type", "application/dash+xml");
+                    conn.getOutputStream().write(content);
+                    conn.getOutputStream().flush();
+
+                    int code = conn.getResponseCode();
+                    InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+                    body = readAll(is);
+
+                    if (code >= 200 && code < 300) {
+                        String path = body == null ? "" : body.trim();
+                        if (path.isEmpty()) {
+                            throw new IOException("Empty response body");
+                        }
+                        return Result.ok(path);
+                    } else {
+                        return Result.err(new IOException("HTTP " + code), body);
+                    }
+                } catch (Exception e) {
+                    return Result.err(e, body);
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+            }
+
+            @Override
+            protected void onPostExecute(Result r) {
+                if (callback == null) return;
+                if (r.error == null) callback.onSuccess(r.value);
+                else callback.onError(r.error, r.serverBody);
+            }
+        }.execute();
+    }
+
     private static String readAll(InputStream is) throws IOException {
         if (is == null) return null;
         BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));

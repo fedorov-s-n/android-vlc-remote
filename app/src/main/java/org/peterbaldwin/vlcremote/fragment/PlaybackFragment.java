@@ -72,6 +72,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
     private TextView mTextLength;
 
+    private TextView mDownloadStatus;
+
     // Autorun (auto-advance HDrezka series): remember the last playing position so a
     // natural end (state -> stopped near the media length) can be told from a manual stop.
     private int mAutorunPrevTime;
@@ -101,6 +103,7 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
         mTextTime = (TextView) v.findViewById(R.id.text_time);
         mTextLength = (TextView) v.findViewById(R.id.text_length);
+        mDownloadStatus = (TextView) v.findViewById(R.id.youtube_download_status);
         return v;
     }
 
@@ -223,6 +226,17 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
     void onStatusChanged(Status status) {
         handleAutorun(status);
+
+        // YouTube "Best" download progress / completion indicator.
+        if (mDownloadStatus != null) {
+            String dl = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.statusText();
+            if (dl == null) {
+                mDownloadStatus.setVisibility(View.GONE);
+            } else {
+                mDownloadStatus.setText(dl);
+                mDownloadStatus.setVisibility(View.VISIBLE);
+            }
+        }
 
         int resId = status.isPlaying() ? R.drawable.ic_media_playback_pause
                 : R.drawable.ic_media_playback_start;

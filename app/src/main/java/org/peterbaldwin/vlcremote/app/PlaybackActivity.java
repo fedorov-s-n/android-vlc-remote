@@ -612,6 +612,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         if (mInput != null) {
             com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
             org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear();
+            org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
             mMediaServer.status().command.input.play(mInput);
         }
     }

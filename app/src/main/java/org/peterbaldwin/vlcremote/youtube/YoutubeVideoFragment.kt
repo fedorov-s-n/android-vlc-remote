@@ -111,16 +111,16 @@ class YoutubeVideoFragment : Fragment() {
 
         v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
 
+        // Quality = mp4 video qualities (all played via download+mux). Audio is auto-selected,
+        // so its spinner is hidden. Default to 1080p or the highest available (rezka's rule).
         qualitySpinner.adapter = spinnerAdapter(v.qualities.map { it.label })
-        audioSpinner.adapter = spinnerAdapter(v.audios.map { it.label })
+        audioSpinner.visibility = View.GONE
+        view.findViewById<View>(R.id.youtube_video_audio_label).visibility = View.GONE
         val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
         subtitleSpinner.adapter = spinnerAdapter(subLabels)
 
-        // Default to the highest muxed (progressive) quality: those are the only streams VLC
-        // can seek within and show a timeline for. Higher video-only qualities stay selectable
-        // (labelled "no seek") for anyone who wants max resolution over seeking.
-        val bestMuxed = v.qualities.indexOfFirst { !it.isVideoOnly }
-        if (bestMuxed > 0) qualitySpinner.setSelection(bestMuxed)
+        val q1080 = v.qualities.indexOfFirst { it.label.startsWith("1080") }
+        if (q1080 > 0) qualitySpinner.setSelection(q1080)
         val engSub = v.subtitles.indexOfFirst { it.label.contains("english", true) }
         if (engSub >= 0) subtitleSpinner.setSelection(engSub + 1) // +1 for "no subtitles" at index 0
     }
@@ -186,51 +186,31 @@ class YoutubeVideoFragment : Fragment() {
 
     private fun playInVlc() {
         val v = video ?: return
-        val quality = v.qualities.getOrNull(qualitySpinner.selectedItemPosition)
-        if (quality == null) {
-            Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
-            return
-        }
         val authority = Preferences.get(requireContext()).authority
         if (authority == null) {
             Toast.makeText(requireContext(), getString(R.string.youtube_no_server), Toast.LENGTH_LONG).show()
             return
         }
 
-        val options = ArrayList<String>()
-        options.add(":meta-title=" + v.title)
-        // A video-only stream has no audio of its own; attach the selected audio track.
-        if (quality.isVideoOnly) {
-            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { options.add(":input-slave=" + it.url) }
+        val quality = v.qualities.getOrNull(qualitySpinner.selectedItemPosition)
+        val audioUrl = v.audioUrl
+        if (quality == null || audioUrl == null) {
+            Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
+            return
         }
 
-        RezkaPlayback.clear()
-        val server = MediaServer(requireContext(), authority)
-        server.status().command.input.playWithOptions(quality.url, options)
-
-        // Subtitles: VLC won't fetch the remote URL itself, so download it to the VLC host
-        // via the helper (same as the rezka tab) and addsubtitle the local file.
         val subPos = subtitleSpinner.selectedItemPosition // index 0 = "no subtitles"
         val chosenSub = if (subPos > 0) v.subtitles.getOrNull(subPos - 1) else null
-        chosenSub?.let { sub ->
-            val name = sub.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt"
-            SubtitleAttacher.attach(requireContext(), server, authority, sub.url, name)
-        }
+        val subName = chosenSub?.let { it.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt" }
 
-        // If this video came from a playlist, remember the queue so the Now Playing
-        // next/previous buttons and autoplay step through it (like a rezka series).
-        val plUrls = arguments?.getStringArrayList(ARG_PL_URLS)
-        val plTitles = arguments?.getStringArrayList(ARG_PL_TITLES)
-        if (plUrls != null && plTitles != null && plUrls.isNotEmpty()) {
-            YoutubePlayback.start(
-                authority, plUrls, plTitles, requireArguments().getInt(ARG_PL_INDEX),
-                quality.label, chosenSub?.label
-            )
-        } else {
-            YoutubePlayback.clear()
-        }
-
-        Toast.makeText(requireContext(), getString(R.string.youtube_sent), Toast.LENGTH_SHORT).show()
+        // All qualities play through the host download+mux mechanism.
+        RezkaPlayback.clear()
+        YoutubePlayback.clear()
+        YtDownloadManager.start(
+            requireContext(), url, quality.url, audioUrl, v.durationSec,
+            v.title, authority, chosenSub?.url, subName
+        )
+        Toast.makeText(requireContext(), getString(R.string.youtube_downloading), Toast.LENGTH_SHORT).show()
     }
 
     companion object {

@@ -146,6 +146,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
                 return true;
             case R.id.menu_clear_playlist:
                 getMediaServer().status().command.playback.empty();
+                org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -240,6 +241,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
         // deleted
         mAdapter.remove(position);
         getMediaServer().status().command.playback.delete(id);
+        org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
     }
 
     private void searchForItem(PlaylistItem item) {
@@ -269,6 +271,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
     private void selectItem(PlaylistItem item) {
         com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
             org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear();
+            org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel();
         getMediaServer().status().command.playback.play(item.getId());
     }
 

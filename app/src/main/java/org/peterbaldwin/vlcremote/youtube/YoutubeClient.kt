@@ -14,8 +14,12 @@ import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem
 import org.schabi.newpipe.extractor.search.SearchExtractor
+import org.schabi.newpipe.extractor.stream.AudioStream
+import org.schabi.newpipe.extractor.stream.DeliveryMethod
+import org.schabi.newpipe.extractor.stream.Stream
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
+import org.schabi.newpipe.extractor.stream.VideoStream
 
 enum class YtKind { STREAM, CHANNEL, PLAYLIST }
 
@@ -48,11 +52,8 @@ data class YtComment(
 /** One page of comments plus whether more can be loaded. */
 data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
 
-/** A selectable video quality (muxed = already has audio; video-only needs an audio track). */
+/** A selectable video quality (mp4 video-only stream; audio is added by the mux helper). */
 data class YtQuality(val label: String, val url: String, val isVideoOnly: Boolean)
-
-/** A selectable audio track. */
-data class YtAudio(val label: String, val url: String)
 
 /** A selectable subtitle track. */
 data class YtSub(val label: String, val url: String)
@@ -70,7 +71,8 @@ data class YtChannel(
     val hasMoreVideos: Boolean
 )
 
-/** Details of a single video. */
+/** Details of a single video. All qualities are mp4 video-only; [audioUrl] is the
+ *  auto-chosen best audio, muxed in by the helper. */
 data class YtVideo(
     val title: String,
     val uploader: String,
@@ -78,7 +80,8 @@ data class YtVideo(
     val description: String,
     val thumbnailUrl: String?,
     val qualities: List<YtQuality>,
-    val audios: List<YtAudio>,
+    val audioUrl: String?,
+    val durationSec: Long,
     val subtitles: List<YtSub>
 )
 
@@ -139,20 +142,20 @@ object YoutubeClient {
         ensureInit()
         val info = StreamInfo.getInfo(ServiceList.YouTube, url)
 
-        // Muxed (progressive) streams carry their own audio and are fully seekable in VLC
-        // (they report a duration); video-only DASH streams need an audio slave and the
-        // timeline/seek may not work on them, so the fragment defaults to the best muxed one.
-        val muxed = info.videoStreams.filter { it.content != null }
-            .map { YtQuality((it.resolution ?: "?") + " ♪", it.content, false) }
-        val videoOnly = info.videoOnlyStreams.filter { it.content != null }
+        // Every quality is downloaded + muxed (into MKV, which holds any codec) with a separate
+        // audio track. List the video-only streams, one entry per resolution (dedup), highest
+        // resolution first; within a resolution prefer mp4/AVC, then higher bitrate.
+        val qualities = info.videoOnlyStreams
+            .filter { usable(it) }
+            .sortedWith(
+                compareByDescending<VideoStream> { resolutionValue(it.resolution) }
+                    .thenBy { videoCodecRank(it) }      // most compatible codec first (AVC>VP9>AV1)
+                    .thenByDescending { it.bitrate }
+            )
+            .distinctBy { it.resolution }
             .map { YtQuality(it.resolution ?: "?", it.content, true) }
-        val qualities = (muxed + videoOnly).sortedByDescending { resolutionValue(it.label) }
 
-        val audios = info.audioStreams.filter { it.content != null }.map {
-            val name = it.audioTrackName ?: it.audioLocale?.displayLanguage
-            val bitrate = if (it.averageBitrate > 0) "${it.averageBitrate}kbps" else ""
-            YtAudio(listOfNotNull(name, bitrate).joinToString(" ").ifBlank { "Audio" }, it.content)
-        }
+        val audioUrl = pickBestAudio(info.audioStreams)?.content
 
         // Prefer VTT subtitles (VLC parses WebVTT reliably); fall back to whatever exists.
         val subSource = info.subtitles.filter { it.content != null }
@@ -168,8 +171,61 @@ object YoutubeClient {
             info.uploaderUrl,
             info.description?.content ?: "",
             info.thumbnails.maxByOrNull { it.width }?.url,
-            qualities, audios, subtitles
+            qualities, audioUrl, info.duration, subtitles
         )
+    }
+
+    // ---- Audio selection (for the download+mux mechanism) ----
+
+    /**
+     * Picks the audio track to mux in. Quality (bitrate) is the primary key; language is only a
+     * tie-breaker with priority original > english > russian > other.
+     */
+    private fun pickBestAudio(list: List<AudioStream>): AudioStream? =
+        list.filter { usable(it) }
+            .sortedWith(compareByDescending<AudioStream> { audioBitrate(it) }.thenBy { audioLangRank(it) })
+            .firstOrNull()
+
+    /** Usable by the download+mux scheme: a directly-downloadable progressive URL with a
+     *  known size (excludes DASH/OTF/HLS segmented streams that ffmpeg can't fetch as one file). */
+    private fun usable(s: Stream): Boolean =
+        s.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP &&
+            s.content != null && contentLength(s.content) > 0
+
+    private fun audioBitrate(a: AudioStream): Int =
+        a.averageBitrate.takeIf { it > 0 } ?: a.bitrate
+
+    private fun audioLangRank(a: AudioStream): Int {
+        val name = (a.audioTrackName ?: "").lowercase()
+        val lang = a.audioLocale?.language ?: ""
+        val original = a.audioTrackType == org.schabi.newpipe.extractor.stream.AudioTrackType.ORIGINAL ||
+            name.contains("original")
+        return when {
+            original -> 0
+            lang == "en" || name.contains("english") -> 1
+            lang == "ru" || name.contains("russian") -> 2
+            else -> 3
+        }
+    }
+
+    private fun isMp4(mime: String?): Boolean = mime != null && mime.contains("mp4")
+
+    /** Codec compatibility rank for picking one stream per resolution: AVC/H.264 (0) is the
+     *  most widely decodable, then VP9 (1), then AV1 (2). Lower is better. */
+    private fun videoCodecRank(v: VideoStream): Int {
+        val codec = (v.itagItem?.codec ?: v.codec ?: "").lowercase()
+        return when {
+            codec.startsWith("avc") || codec.contains("h264") -> 0
+            codec.startsWith("vp") -> 1
+            codec.startsWith("av01") || codec.contains("av1") -> 2
+            else -> 3
+        }
+    }
+
+    /** googlevideo URLs carry the file size in the clen= query parameter. */
+    private fun contentLength(url: String?): Long {
+        if (url == null) return -1
+        return Regex("[?&]clen=(\\d+)").find(url)?.groupValues?.get(1)?.toLongOrNull() ?: -1
     }
 
     // ---- Channel ----
