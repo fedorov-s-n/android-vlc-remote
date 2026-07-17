@@ -58,6 +58,7 @@ class YoutubeSearchFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 clear.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
+                if (s.isNullOrEmpty()) showRecent()
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -73,6 +74,7 @@ class YoutubeSearchFragment : Fragment() {
                 false
             }
         }
+        showRecent()
         return view
     }
 
@@ -81,15 +83,23 @@ class YoutubeSearchFragment : Fragment() {
         if (isAdded) submitOrdered()
     }
 
-    /** Toolbar History: return to an empty search screen (recent list added separately). */
+    /** Toolbar History: clear the query and show the recently opened items. */
     fun onHistoryRequested() {
         if (!isAdded) return
         input.setText("")
+        showRecent()
+    }
+
+    /** Idle state: show recently opened items (newest first, no re-sorting). */
+    private fun showRecent() {
+        if (!::adapter.isInitialized) return
         allItems.clear()
-        adapter.setItems(emptyList())
+        hasMore = false
+        adapter.setItems(YoutubeHistory.getRecent(requireContext()))
     }
 
     private fun onItemClicked(item: YtItem) {
+        YoutubeHistory.addRecent(requireContext(), item)
         val host = parentFragment as? YoutubeFragment ?: return
         when (item.kind) {
             YtKind.STREAM -> host.open(YoutubeVideoFragment.newInstance(item.url))

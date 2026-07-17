@@ -51,6 +51,7 @@ class YoutubeListFragment : Fragment() {
 
     private fun onItemClicked(item: YtItem) {
         if (item.kind == YtKind.STREAM) {
+            YoutubeHistory.addRecent(requireContext(), item)
             (parentFragment as? YoutubeFragment)?.open(YoutubeVideoFragment.newInstance(item.url))
         }
     }

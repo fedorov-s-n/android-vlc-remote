@@ -181,6 +181,27 @@
             android:persistent="false" />
     </PreferenceScreen>
 
+    <PreferenceScreen
+        android:key="youtube_settings_screen"
+        android:title="@string/tab_youtube"
+        android:icon="@drawable/ic_tab_youtube"
+        android:persistent="false">
+
+        <EditTextPreference
+            android:key="youtube_history_size"
+            android:title="@string/pref_youtube_history_size_title"
+            android:summary="@string/pref_youtube_history_size_summary"
+            android:defaultValue="15"
+            android:inputType="number"
+            android:persistent="true" />
+
+        <Preference
+            android:key="youtube_clear_history"
+            android:title="@string/pref_youtube_clear_history_title"
+            android:summary="@string/pref_youtube_clear_history_summary"
+            android:persistent="false" />
+    </PreferenceScreen>
+
     <PreferenceCategory android:title="@string/preference_category_phone_title">
         
         <CheckBoxPreference

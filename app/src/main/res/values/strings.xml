@@ -214,6 +214,11 @@
     <string name="youtube_error">YouTube error</string>
     <string name="youtube_play">Play in VLC</string>
     <string name="youtube_history">History</string>
+    <string name="youtube_history_cleared">History cleared</string>
+    <string name="pref_youtube_history_size_title">History size</string>
+    <string name="pref_youtube_history_size_summary">Number of recently opened items to keep (default 15)</string>
+    <string name="pref_youtube_clear_history_title">Clear history</string>
+    <string name="pref_youtube_clear_history_summary">Remove all recently opened items</string>
     <string name="youtube_sort_relevance">Relevance</string>
     <string name="youtube_sort_date">Date</string>
     <string name="youtube_sort_views">Views</string>

@@ -321,7 +321,7 @@ public final class PickServerFragment extends PreferenceFragment implements Port
                Preferences.KEY_SUBTITLE_DELAY.equals(preferenceKey)  ||
                // hdrezka settings: use default preference handling instead of the
                // server-selection fall-through below.
-               (preferenceKey != null && preferenceKey.startsWith("hdrezka_"));
+               (preferenceKey != null && (preferenceKey.startsWith("hdrezka_") || preferenceKey.startsWith("youtube_")));
     }
 
     @Override
@@ -329,6 +329,11 @@ public final class PickServerFragment extends PreferenceFragment implements Port
         if("hdrezka_clear_history".equals(preference.getKey())) {
             com.falcofemoralis.hdrezkaapp.utils.HdrezkaHistory.clearRecent(getActivity());
             android.widget.Toast.makeText(getActivity(), R.string.hdrezka_history_cleared, android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        if("youtube_clear_history".equals(preference.getKey())) {
+            org.peterbaldwin.vlcremote.youtube.YoutubeHistory.clear(getActivity());
+            android.widget.Toast.makeText(getActivity(), R.string.youtube_history_cleared, android.widget.Toast.LENGTH_SHORT).show();
             return true;
         }
         if(isHandledByChangeListener(preference.getKey())) {
