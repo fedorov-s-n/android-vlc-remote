@@ -326,6 +326,11 @@ public final class PickServerFragment extends PreferenceFragment implements Port
 
     @Override
     public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
+        if("hdrezka_clear_history".equals(preference.getKey())) {
+            com.falcofemoralis.hdrezkaapp.utils.HdrezkaHistory.clearRecent(getActivity());
+            android.widget.Toast.makeText(getActivity(), R.string.hdrezka_history_cleared, android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        }
         if(isHandledByChangeListener(preference.getKey())) {
             return super.onPreferenceTreeClick(preferenceScreen, preference);
         } else if(Preferences.KEY_HIDE_DVD_TAB.equals(preference.getKey())) {

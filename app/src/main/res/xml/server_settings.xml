@@ -165,6 +165,20 @@
             android:dependency="hdrezka_sub_server_enabled"
             android:inputType="number"
             android:persistent="true" />
+
+        <EditTextPreference
+            android:key="hdrezka_history_size"
+            android:title="@string/pref_hdrezka_history_size_title"
+            android:summary="@string/pref_hdrezka_history_size_summary"
+            android:defaultValue="15"
+            android:inputType="number"
+            android:persistent="true" />
+
+        <Preference
+            android:key="hdrezka_clear_history"
+            android:title="@string/pref_hdrezka_clear_history_title"
+            android:summary="@string/pref_hdrezka_clear_history_summary"
+            android:persistent="false" />
     </PreferenceScreen>
 
     <PreferenceCategory android:title="@string/preference_category_phone_title">

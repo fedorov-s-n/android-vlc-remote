@@ -26,9 +26,21 @@ data class RecentFilm(
  */
 object HdrezkaHistory {
     private const val KEY_RECENT = "hdrezka_hist_recent"
-    private const val MAX_RECENT = 15
+
+    /** Preference key + default for the configurable history size (rezka settings). */
+    const val KEY_SIZE = "hdrezka_history_size"
+    const val DEFAULT_SIZE = 15
 
     private fun prefs(context: Context) = PreferenceManager.getDefaultSharedPreferences(context)
+
+    private fun maxRecent(context: Context): Int =
+        prefs(context).getString(KEY_SIZE, null)?.toIntOrNull()?.coerceAtLeast(1) ?: DEFAULT_SIZE
+
+    /** Removes all recently opened films. */
+    @JvmStatic
+    fun clearRecent(context: Context) {
+        prefs(context).edit().remove(KEY_RECENT).apply()
+    }
 
     fun getRecent(context: Context): List<RecentFilm> {
         val json = prefs(context).getString(KEY_RECENT, null) ?: return emptyList()
@@ -56,7 +68,8 @@ object HdrezkaHistory {
         val existing = list.firstOrNull { it.link == link }
         list.removeAll { it.link == link }
         list.add(0, RecentFilm(link, title, poster, existing?.voice, existing?.season, existing?.episode, existing?.quality, existing?.subtitle))
-        while (list.size > MAX_RECENT) {
+        val max = maxRecent(context)
+        while (list.size > max) {
             list.removeAt(list.size - 1)
         }
         save(context, list)

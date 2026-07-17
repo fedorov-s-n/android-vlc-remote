@@ -201,6 +201,11 @@
     <string name="pref_hdrezka_sub_server_host_summary">Helper server host. Leave empty to use the VLC server\'s address</string>
     <string name="pref_hdrezka_sub_server_port_title">Subtitle server port</string>
     <string name="pref_hdrezka_sub_server_port_summary">Helper server port (default 3900)</string>
+    <string name="pref_hdrezka_history_size_title">History size</string>
+    <string name="pref_hdrezka_history_size_summary">Number of recently opened films to keep (default 15)</string>
+    <string name="pref_hdrezka_clear_history_title">Clear history</string>
+    <string name="pref_hdrezka_clear_history_summary">Remove all recently opened films</string>
+    <string name="hdrezka_history_cleared">History cleared</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

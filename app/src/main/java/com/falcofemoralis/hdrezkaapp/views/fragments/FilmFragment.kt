@@ -136,16 +136,19 @@ class FilmFragment : Fragment(), FilmView {
         filmPresenter = FilmPresenter(this, argFilm)
         currentFilmLink = argFilm.filmLink
 
-        // Choose which dropdown selections to pre-apply (priority 1): this film's own
-        // stored selections if it was opened before, otherwise the last opened film's.
+        // Dropdown pre-selection (priority 1):
+        //  - voice/quality/subtitle: this film's stored choice if opened before, else the
+        //    last opened film's choice;
+        //  - season/episode: only this film's own stored choice (never another film's) —
+        //    if it isn't in history, leave them to default to the first item.
         val historyCtx = requireContext()
-        val source = HdrezkaHistory.getForLink(historyCtx, currentFilmLink)
-            ?: HdrezkaHistory.getMostRecent(historyCtx)
+        val own = HdrezkaHistory.getForLink(historyCtx, currentFilmLink)
+        val source = own ?: HdrezkaHistory.getMostRecent(historyCtx)
         pendingHistVoice = source?.voice
-        pendingHistSeason = source?.season
-        pendingHistEpisode = source?.episode
         pendingHistQuality = source?.quality
         pendingHistSubtitle = source?.subtitle
+        pendingHistSeason = own?.season
+        pendingHistEpisode = own?.episode
 
         // Record/refresh this page in the recent-films history (keeps its selections).
         HdrezkaHistory.addRecent(historyCtx, currentFilmLink, argFilm.title, argFilm.posterPath)
