@@ -24,7 +24,6 @@ class YoutubeListFragment : Fragment() {
     private var hasMore = false
 
     private val url: String get() = requireArguments().getString(ARG_URL) ?: ""
-    private val isPlaylist: Boolean get() = requireArguments().getBoolean(ARG_PLAYLIST)
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_youtube_list, container, false)
@@ -61,7 +60,7 @@ class YoutubeListFragment : Fragment() {
         progress.visibility = View.VISIBLE
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                val page = if (isPlaylist) YoutubeClient.playlist(url) else YoutubeClient.channel(url)
+                val page = YoutubeClient.playlist(url)
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     adapter.setItems(page.items)
@@ -86,7 +85,7 @@ class YoutubeListFragment : Fragment() {
         isLoading = true
         GlobalScope.launch(Dispatchers.IO) {
             try {
-                val page = if (isPlaylist) YoutubeClient.playlistMore() else YoutubeClient.channelMore()
+                val page = YoutubeClient.playlistMore()
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     adapter.addItems(page.items)
@@ -106,14 +105,12 @@ class YoutubeListFragment : Fragment() {
     companion object {
         private const val ARG_URL = "url"
         private const val ARG_TITLE = "title"
-        private const val ARG_PLAYLIST = "playlist"
 
-        fun newInstance(url: String, title: String, isPlaylist: Boolean): YoutubeListFragment =
+        fun newInstance(url: String, title: String): YoutubeListFragment =
             YoutubeListFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_URL, url)
                     putString(ARG_TITLE, title)
-                    putBoolean(ARG_PLAYLIST, isPlaylist)
                 }
             }
     }

@@ -93,7 +93,7 @@ class YoutubeVideoFragment : Fragment() {
         } else {
             uploader.setOnClickListener {
                 (parentFragment as? YoutubeFragment)?.open(
-                    YoutubeListFragment.newInstance(uploaderUrl, v.uploader, false)
+                    YoutubeChannelFragment.newInstance(uploaderUrl)
                 )
             }
         }

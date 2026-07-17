@@ -43,6 +43,19 @@ data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
 /** A selectable quality for a video (label shown in the dropdown, url to play). */
 data class YtQuality(val label: String, val url: String)
 
+/** A channel page: header metadata plus the first page of its live / playlists / videos. */
+data class YtChannel(
+    val name: String,
+    val subscribers: Long,
+    val description: String,
+    val avatarUrl: String?,
+    val bannerUrl: String?,
+    val live: List<YtItem>,
+    val playlists: List<YtItem>,
+    val videos: List<YtItem>,
+    val hasMoreVideos: Boolean
+)
+
 /** Details of a single video. */
 data class YtVideo(
     val title: String,
@@ -123,16 +136,42 @@ object YoutubeClient {
 
     // ---- Channel ----
 
-    fun channel(url: String): YtPage {
+    /** Full channel page: header + first page of live, playlists and videos. Sets the
+     *  videos pagination state so [channelMore] continues the videos section. */
+    fun channelFull(url: String): YtChannel {
         ensureInit()
         val info = ChannelInfo.getInfo(ServiceList.YouTube, url)
-        val tab = info.tabs.firstOrNull { it.contentFilters.contains(ChannelTabs.VIDEOS) }
-            ?: info.tabs.firstOrNull()
-            ?: run { channelTab = null; return YtPage(emptyList(), false) }
-        channelTab = tab
-        val tabInfo = ChannelTabInfo.getInfo(ServiceList.YouTube, tab)
-        channelNextPage = tabInfo.nextPage
-        return YtPage(mapItems(tabInfo.relatedItems), tabInfo.hasNextPage())
+        val tabs = info.tabs
+        val live = tabFirst(tabs, ChannelTabs.LIVESTREAMS)
+        val playlists = tabFirst(tabs, ChannelTabs.PLAYLISTS)
+
+        val videosTab = tabs.firstOrNull { it.contentFilters.contains(ChannelTabs.VIDEOS) } ?: tabs.firstOrNull()
+        channelTab = videosTab
+        var videos = emptyList<YtItem>()
+        var hasMoreVideos = false
+        if (videosTab != null) {
+            val ti = ChannelTabInfo.getInfo(ServiceList.YouTube, videosTab)
+            channelNextPage = ti.nextPage
+            videos = mapItems(ti.relatedItems)
+            hasMoreVideos = ti.hasNextPage()
+        }
+        return YtChannel(
+            info.name ?: "",
+            info.subscriberCount,
+            info.description ?: "",
+            info.avatars.maxByOrNull { it.width }?.url,
+            info.banners.maxByOrNull { it.width }?.url,
+            live, playlists, videos, hasMoreVideos
+        )
+    }
+
+    private fun tabFirst(tabs: List<ListLinkHandler>, filter: String): List<YtItem> {
+        val tab = tabs.firstOrNull { it.contentFilters.contains(filter) } ?: return emptyList()
+        return try {
+            mapItems(ChannelTabInfo.getInfo(ServiceList.YouTube, tab).relatedItems)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     fun channelMore(): YtPage {

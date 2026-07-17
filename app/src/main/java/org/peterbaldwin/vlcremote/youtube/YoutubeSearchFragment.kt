@@ -103,8 +103,8 @@ class YoutubeSearchFragment : Fragment() {
         val host = parentFragment as? YoutubeFragment ?: return
         when (item.kind) {
             YtKind.STREAM -> host.open(YoutubeVideoFragment.newInstance(item.url))
-            YtKind.CHANNEL -> host.open(YoutubeListFragment.newInstance(item.url, item.title, false))
-            YtKind.PLAYLIST -> host.open(YoutubeListFragment.newInstance(item.url, item.title, true))
+            YtKind.CHANNEL -> host.open(YoutubeChannelFragment.newInstance(item.url))
+            YtKind.PLAYLIST -> host.open(YoutubeListFragment.newInstance(item.url, item.title))
         }
     }
 
