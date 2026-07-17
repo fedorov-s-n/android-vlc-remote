@@ -9,7 +9,6 @@ import com.falcofemoralis.hdrezkaapp.objects.Film
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.views.fragments.ActorFragment
 import com.falcofemoralis.hdrezkaapp.views.fragments.FilmFragment
-import com.falcofemoralis.hdrezkaapp.views.fragments.SettingsFragment
 import com.falcofemoralis.hdrezkaapp.views.tv.NavigationMenu
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
