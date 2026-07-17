@@ -187,15 +187,20 @@
     <string name="vlc_sent">Отправлено в VLC</string>
     <string name="vlc_subtitle_failed">Не удалось загрузить субтитры (нужен помощник на порту 3900)</string>
     <string name="preference_category_hdrezka_title">HDrezka</string>
-    <string name="hdrezka_history">История</string>
-    <string name="pref_hdrezka_provider_title">Зеркало HDrezka</string>
-    <string name="pref_hdrezka_provider_summary">Адрес сайта HDrezka для вкладки (по умолчанию https://rezka.ag)</string>
-    <string name="pref_hdrezka_sub_server_enabled_title">Сервер субтитров</string>
-    <string name="pref_hdrezka_sub_server_enabled_summary">Скачивать субтитры на машину VLC через сервер-помощник (нужно для показа субтитров)</string>
-    <string name="pref_hdrezka_sub_server_host_title">Адрес сервера субтитров</string>
-    <string name="pref_hdrezka_sub_server_host_summary">Хост сервера-помощника. Пусто — использовать адрес VLC-сервера</string>
-    <string name="pref_hdrezka_sub_server_port_title">Порт сервера субтитров</string>
-    <string name="pref_hdrezka_sub_server_port_summary">Порт сервера-помощника (по умолчанию 3900)</string>
+    <string name="hdrezka_history">History</string>
+    <string name="rezka_no_next_episode">This is the last episode</string>
+    <string name="rezka_no_prev_episode">This is the first episode</string>
+    <string name="autorun_series">Autoplay episodes</string>
+    <string name="autorun_on">Episode autoplay on</string>
+    <string name="autorun_off">Episode autoplay off</string>
+    <string name="pref_hdrezka_provider_title">HDrezka mirror</string>
+    <string name="pref_hdrezka_provider_summary">HDrezka site URL used by the tab (default https://rezka.ag)</string>
+    <string name="pref_hdrezka_sub_server_enabled_title">Subtitle server</string>
+    <string name="pref_hdrezka_sub_server_enabled_summary">Download subtitles to the VLC machine via a helper server (required to display subtitles)</string>
+    <string name="pref_hdrezka_sub_server_host_title">Subtitle server address</string>
+    <string name="pref_hdrezka_sub_server_host_summary">Helper server host. Leave empty to use the VLC server\'s address</string>
+    <string name="pref_hdrezka_sub_server_port_title">Subtitle server port</string>
+    <string name="pref_hdrezka_sub_server_port_summary">Helper server port (default 3900)</string>
 
     <!-- Label for playlist tab -->
     <string name="tab_playlist">Playlist</string>

@@ -26,7 +26,7 @@ data class RecentFilm(
  */
 object HdrezkaHistory {
     private const val KEY_RECENT = "hdrezka_hist_recent"
-    private const val MAX_RECENT = 10
+    private const val MAX_RECENT = 15
 
     private fun prefs(context: Context) = PreferenceManager.getDefaultSharedPreferences(context)
 

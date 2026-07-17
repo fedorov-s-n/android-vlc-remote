@@ -52,6 +52,10 @@ public final class ButtonsFragment extends MediaFragment implements View.OnClick
     
     private ImageButton mButtonShuffle;
     private ImageButton mButtonRepeat;
+    private ImageButton mButtonAutorun;
+
+    /** Preference key for the "autoplay next series episode" toggle. */
+    public static final String KEY_AUTORUN = "hdrezka_autorun";
 
     private boolean isAllButtonsVisible;
     
@@ -90,12 +94,14 @@ public final class ButtonsFragment extends MediaFragment implements View.OnClick
         
         mButtonShuffle = (ImageButton) view.findViewById(R.id.playlist_button_shuffle);
         mButtonRepeat = (ImageButton) view.findViewById(R.id.playlist_button_repeat);
+        mButtonAutorun = (ImageButton) view.findViewById(R.id.playlist_button_autorun);
         ImageButton mButtonPlaylistSeekBackward = (ImageButton) view.findViewById(R.id.action_button_seek_backward);
         ImageButton mButtonPlaylistSeekForward = (ImageButton) view.findViewById(R.id.action_button_seek_forward);
         isAllButtonsVisible = view.findViewById(R.id.audio_player_buttons_second_row) != null;
         getActivity().invalidateOptionsMenu();
 
-        setupImageButtonListeners(mButtonShuffle, mButtonRepeat, mButtonPlaylistSeekBackward, mButtonPlaylistSeekForward);
+        setupImageButtonListeners(mButtonShuffle, mButtonRepeat, mButtonAutorun, mButtonPlaylistSeekBackward, mButtonPlaylistSeekForward);
+        updateButtons();
         
         if(getResources().getConfiguration().screenWidthDp >= 400) {
             // seek buttons are displayed in playback fragment if >= 400dp
@@ -166,6 +172,13 @@ public final class ButtonsFragment extends MediaFragment implements View.OnClick
                 mRandom = !mRandom;
                 updateButtons();
                 break;
+            case R.id.playlist_button_autorun:
+                boolean enabled = !isAutorunEnabled();
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(getActivity())
+                        .edit().putBoolean(KEY_AUTORUN, enabled).apply();
+                updateButtons();
+                Toast.makeText(getActivity(), enabled ? R.string.autorun_on : R.string.autorun_off, Toast.LENGTH_SHORT).show();
+                break;
             case R.id.playlist_button_repeat:
                 // Order: Normal -> Loop -> Repeat
                 if (mLoop) {
@@ -205,9 +218,18 @@ public final class ButtonsFragment extends MediaFragment implements View.OnClick
         }
     }
 
+    private boolean isAutorunEnabled() {
+        return androidx.preference.PreferenceManager.getDefaultSharedPreferences(getActivity())
+                .getBoolean(KEY_AUTORUN, false);
+    }
+
     private void updateButtons() {
         mButtonShuffle.setImageResource(getShuffleResId());
         mButtonRepeat.setImageResource(getRepeatResId());
+        if (mButtonAutorun != null) {
+            mButtonAutorun.setImageResource(isAutorunEnabled()
+                    ? R.drawable.ic_autorun_on_btn : R.drawable.ic_autorun_off_btn);
+        }
     }
 
     void onStatusChanged(Status status) {

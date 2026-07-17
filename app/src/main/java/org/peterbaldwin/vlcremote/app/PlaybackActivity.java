@@ -590,6 +590,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         }   
         mInput = input;
         if (mInput != null) {
+            com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
             mMediaServer.status().command.input.play(mInput);
         }
     }

@@ -273,41 +273,17 @@ class FilmFragment : Fragment(), FilmView {
             return
         }
 
-        val server = org.peterbaldwin.vlcremote.net.MediaServer(requireContext(), authority)
-        server.status().command.input.play(stream.url)
-
-        // Attach the selected subtitle track (index 0 is "off"). VLC's addsubtitle does
-        // not accept remote URLs, so we ask the companion download helper (running on the
-        // VLC host, port 3900) to fetch the subtitle to a local temp file first, then feed
-        // that path to VLC and toggle the subtitle track on.
+        // Selected subtitle (index 0 is "off").
         val subPos = subtitleSpinner.selectedItemPosition
-        if (subPos > 0) {
-            voice.subtitles?.getOrNull(subPos - 1)?.let { sub ->
-                val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
-                if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
-                    return@let
-                }
-                val host = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
-                    ?: org.peterbaldwin.vlcremote.model.Server.fromKey(authority).host
-                val port = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
-                val ext = sub.url.substringBefore('?').substringAfterLast('.', "vtt")
-                val name = sub.lang.replace(Regex("[^A-Za-z0-9]"), "_") + "." + ext
-                org.peterbaldwin.vlcremote.rezka.DownloadPathClient.requestTempPath(
-                    host, port, sub.url, name,
-                    object : org.peterbaldwin.vlcremote.rezka.DownloadPathClient.Callback {
-                        override fun onSuccess(tempPath: String) {
-                            server.status().command.input.subtitles(tempPath)
-                            currentView.postDelayed({
-                                server.status().command.key(org.peterbaldwin.vlcremote.model.Hotkeys.SUBTITLE_TRACK)
-                            }, 3000)
-                        }
+        val subtitle = if (subPos > 0) voice.subtitles?.getOrNull(subPos - 1) else null
 
-                        override fun onError(e: Exception, serverBody: String?) {
-                            Toast.makeText(requireContext(), getString(R.string.vlc_subtitle_failed), Toast.LENGTH_LONG).show()
-                        }
-                    }
-                )
-            }
+        if (seasonSpinner.visibility == View.VISIBLE) {
+            // Series: remember the context so the VLC next/previous buttons step episodes.
+            val season = selSeason ?: ""
+            val episode = selEpisodes.getOrNull(episodeSpinner.selectedItemPosition) ?: ""
+            RezkaPlayback.playSeries(requireContext(), authority, filmPresenter.film, voice, season, episode, stream, subtitle)
+        } else {
+            RezkaPlayback.playMovie(requireContext(), authority, stream, subtitle)
         }
 
         Toast.makeText(requireContext(), getString(R.string.vlc_sent), Toast.LENGTH_SHORT).show()

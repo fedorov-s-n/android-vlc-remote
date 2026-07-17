@@ -20,6 +20,7 @@ package org.peterbaldwin.vlcremote.fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
@@ -70,6 +71,12 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
     private TextView mTextLength;
 
+    // Autorun (auto-advance HDrezka series): remember the last playing position so a
+    // natural end (state -> stopped near the media length) can be told from a manual stop.
+    private int mAutorunPrevTime;
+    private int mAutorunPrevLength;
+    private boolean mAutorunFiredForThisEnd;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.audio_player_common, container, false);
@@ -119,9 +126,24 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         } else if (v == mButtonPlaylistStop) {
             playlist().stop();
         } else if (v == mButtonPlaylistSkipBackward) {
-            playlist().previous();
+            // For an HDrezka series, step to the previous episode (crossing seasons); at
+            // the very first episode show a toast and do nothing. Otherwise fall back to
+            // normal VLC playlist navigation.
+            if (RezkaPlayback.isActiveSeries()) {
+                if (!RezkaPlayback.playPrevious(getActivity())) {
+                    Toast.makeText(getActivity(), R.string.rezka_no_prev_episode, Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                playlist().previous();
+            }
         } else if (v == mButtonPlaylistSkipForward) {
-            playlist().next();
+            if (RezkaPlayback.isActiveSeries()) {
+                if (!RezkaPlayback.playNext(getActivity())) {
+                    Toast.makeText(getActivity(), R.string.rezka_no_next_episode, Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                playlist().next();
+            }
         } else if (v == mButtonPlaylistSeekBackward) {
             command().seek(Uri.encode("-".concat(Preferences.get(getActivity()).getSeekTime())));
         } else if (v == mButtonPlaylistSeekForward) {
@@ -180,6 +202,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
     }
 
     void onStatusChanged(Status status) {
+        handleAutorun(status);
+
         int resId = status.isPlaying() ? R.drawable.ic_media_playback_pause
                 : R.drawable.ic_media_playback_start;
         mButtonPlaylistPause.setImageResource(resId);
@@ -198,6 +222,28 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
         String formattedLength = formatTime(length);
         mTextLength.setText(formattedLength);
+    }
+
+    /**
+     * When "autorun" is on and an HDrezka series is playing, advance to the next episode
+     * once the current one finishes on its own (VLC stops with the position at the end).
+     */
+    private void handleAutorun(Status status) {
+        boolean autorun = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(getActivity()).getBoolean(ButtonsFragment.KEY_AUTORUN, false);
+        if (status.isStopped()) {
+            if (autorun && RezkaPlayback.isActiveSeries() && !mAutorunFiredForThisEnd
+                    && mAutorunPrevLength > 0 && mAutorunPrevTime >= mAutorunPrevLength - 5) {
+                mAutorunFiredForThisEnd = true;
+                RezkaPlayback.playNext(getActivity());
+            }
+        } else {
+            mAutorunFiredForThisEnd = false;
+            if (status.getLength() > 0) {
+                mAutorunPrevTime = status.getTime();
+                mAutorunPrevLength = status.getLength();
+            }
+        }
     }
 
     private static void doubleDigit(StringBuilder builder, long value) {

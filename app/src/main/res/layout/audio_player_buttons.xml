@@ -29,6 +29,15 @@
         android:src="@drawable/ic_mp_shuffle_off_btn" />
 
     <ImageButton
+        android:id="@+id/playlist_button_autorun"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/actionBarItemBackground"
+        style="?android:attr/actionButtonStyle"
+        android:contentDescription="@string/autorun_series"
+        android:src="@drawable/ic_autorun_off_btn" />
+
+    <ImageButton
         android:id="@+id/action_button_seek_forward"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
