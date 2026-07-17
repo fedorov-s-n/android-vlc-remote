@@ -111,16 +111,16 @@ class YoutubeVideoFragment : Fragment() {
 
         v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
 
-        // "Auto" (index 0) sends the youtube.com/watch URL and lets VLC resolve it: VLC then
-        // plays video+audio as one stream, so quality is high AND seeking/timeline work.
-        // The direct qualities below are a fallback; video-only ones ("no ♪") use a separate
-        // audio slave, which desyncs on seek, so they are not the default.
-        val qualityLabels = listOf(getString(R.string.youtube_quality_auto)) + v.qualities.map { it.label }
-        qualitySpinner.adapter = spinnerAdapter(qualityLabels)
+        qualitySpinner.adapter = spinnerAdapter(v.qualities.map { it.label })
         audioSpinner.adapter = spinnerAdapter(v.audios.map { it.label })
         val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
         subtitleSpinner.adapter = spinnerAdapter(subLabels)
 
+        // Default to the highest muxed (progressive) quality: those are the only streams VLC
+        // can seek within and show a timeline for. Higher video-only qualities stay selectable
+        // (labelled "no seek") for anyone who wants max resolution over seeking.
+        val bestMuxed = v.qualities.indexOfFirst { !it.isVideoOnly }
+        if (bestMuxed > 0) qualitySpinner.setSelection(bestMuxed)
         val engSub = v.subtitles.indexOfFirst { it.label.contains("english", true) }
         if (engSub >= 0) subtitleSpinner.setSelection(engSub + 1) // +1 for "no subtitles" at index 0
     }
@@ -186,35 +186,27 @@ class YoutubeVideoFragment : Fragment() {
 
     private fun playInVlc() {
         val v = video ?: return
+        val quality = v.qualities.getOrNull(qualitySpinner.selectedItemPosition)
+        if (quality == null) {
+            Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
+            return
+        }
         val authority = Preferences.get(requireContext()).authority
         if (authority == null) {
             Toast.makeText(requireContext(), getString(R.string.youtube_no_server), Toast.LENGTH_LONG).show()
             return
         }
 
-        // Quality index 0 = "Auto": hand VLC the page URL and let it resolve everything
-        // (best-quality video with its own audio, seekable). Anything else is a direct stream.
-        val qPos = qualitySpinner.selectedItemPosition
-        val auto = qPos == 0
-        val quality = if (auto) null else v.qualities.getOrNull(qPos - 1)
-        if (!auto && quality == null) {
-            Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
-            return
+        val options = ArrayList<String>()
+        options.add(":meta-title=" + v.title)
+        // A video-only stream has no audio of its own; attach the selected audio track.
+        if (quality.isVideoOnly) {
+            v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { options.add(":input-slave=" + it.url) }
         }
 
         RezkaPlayback.clear()
         val server = MediaServer(requireContext(), authority)
-        if (auto) {
-            server.status().command.input.playWithMetaTitle(url, v.title)
-        } else {
-            val options = ArrayList<String>()
-            options.add(":meta-title=" + v.title)
-            // A video-only stream has no audio of its own; attach the selected audio track.
-            if (quality!!.isVideoOnly) {
-                v.audios.getOrNull(audioSpinner.selectedItemPosition)?.let { options.add(":input-slave=" + it.url) }
-            }
-            server.status().command.input.playWithOptions(quality.url, options)
-        }
+        server.status().command.input.playWithOptions(quality.url, options)
 
         // Subtitles: VLC won't fetch the remote URL itself, so download it to the VLC host
         // via the helper (same as the rezka tab) and addsubtitle the local file.
@@ -232,7 +224,7 @@ class YoutubeVideoFragment : Fragment() {
         if (plUrls != null && plTitles != null && plUrls.isNotEmpty()) {
             YoutubePlayback.start(
                 authority, plUrls, plTitles, requireArguments().getInt(ARG_PL_INDEX),
-                if (auto) null else quality?.label, chosenSub?.label, auto
+                quality.label, chosenSub?.label
             )
         } else {
             YoutubePlayback.clear()

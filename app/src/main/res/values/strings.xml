@@ -218,7 +218,6 @@
     <string name="youtube_section_videos">Videos</string>
     <string name="youtube_subscribers">%1$d subscribers</string>
     <string name="youtube_quality">Quality</string>
-    <string name="youtube_quality_auto">Auto (VLC, seekable)</string>
     <string name="youtube_audio">Audio</string>
     <string name="youtube_subtitles">Subtitles</string>
     <string name="youtube_subtitle_off">No subtitles</string>
