@@ -129,7 +129,7 @@ def _active_count() -> int:
     return sum(1 for j in _mux_jobs.values() if j["proc"].poll() is None)
 
 
-def start_mux(v: str, a: str):
+def start_mux(v: str, a: str, title: str = "", artist: str = ""):
     """Returns (job_id, error). error is a string if the job could not be started."""
     jid = _job_id(v, a)
     with _mux_lock:
@@ -147,13 +147,15 @@ def start_mux(v: str, a: str):
         except OSError:
             pass
         # Matroska (MKV) holds any codec (AVC/VP9/AV1 + AAC/Opus) and is playable while still
-        # being written, so VLC can start during the download.
-        proc = subprocess.Popen(
-            ["ffmpeg", "-y", "-loglevel", "error",
-             "-i", v, "-i", a, "-c", "copy",
-             "-f", "matroska", path],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        # being written, so VLC can start during the download. Embed title/artist so VLC's
+        # Now Playing shows the video + channel instead of the temp filename.
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", v, "-i", a, "-c", "copy"]
+        if title:
+            cmd += ["-metadata", "title=" + title]
+        if artist:
+            cmd += ["-metadata", "artist=" + artist]
+        cmd += ["-f", "matroska", path]
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _mux_jobs[jid] = {"path": path, "proc": proc,
                           "total": _clen(v) + _clen(a), "start": time.time()}
         return jid, None
@@ -201,6 +203,41 @@ def cancel_mux(jid: str) -> str:
     return "OK"
 
 
+FILE_TTL_SEC = 12 * 3600  # delete leftover temp files (subtitles + muxed videos) after 12h
+
+
+def _cleanup_old_files():
+    now = time.time()
+    tmp = tempfile.gettempdir()
+    try:
+        names = os.listdir(tmp)
+    except OSError:
+        return
+    for name in names:
+        if not (name.startswith("dl_") or name.startswith("mux_")):
+            continue
+        p = os.path.join(tmp, name)
+        try:
+            if now - os.path.getmtime(p) > FILE_TTL_SEC:
+                os.remove(p)
+        except OSError:
+            pass
+    with _mux_lock:
+        for jid in list(_mux_jobs.keys()):
+            job = _mux_jobs[jid]
+            if job["proc"].poll() is not None and not os.path.exists(job["path"]):
+                _mux_jobs.pop(jid, None)
+
+
+def _cleanup_loop():
+    while True:
+        time.sleep(1800)  # every 30 minutes
+        try:
+            _cleanup_old_files()
+        except Exception:
+            pass
+
+
 def save_to_temp(name: str | None, data: bytes) -> str:
     filename = safe_name(name) if name else "content"
     fd, temp_path = tempfile.mkstemp(prefix="dl_", suffix="_" + filename)
@@ -231,7 +268,9 @@ class Handler(BaseHTTPRequestHandler):
             if not v or not a:
                 self._send(400, "Missing 'v'/'a'\n")
                 return
-            jid, err = start_mux(v, a)
+            title = qs.get("t", [""])[0] or ""
+            artist = qs.get("c", [""])[0] or ""
+            jid, err = start_mux(v, a, title, artist)
             if err:
                 self._send(503, "ERROR: " + err + "\n")
             else:
@@ -293,10 +332,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    threading.Thread(target=_cleanup_loop, daemon=True).start()
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"Listening on http://{HOST}:{PORT}")
-    print("GET  /?url=...&name=...   (download to temp)")
-    print("POST /content?name=...    (save request body to temp)")
+    print("GET  /?url=...&name=...      (download to temp)")
+    print("POST /content?name=...       (save request body to temp)")
+    print("GET  /mux/start|status|cancel  (background video download)")
+    print(f"temp files auto-deleted after {FILE_TTL_SEC // 3600}h")
     httpd.serve_forever()
 
 

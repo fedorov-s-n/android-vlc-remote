@@ -51,6 +51,11 @@ object YtDownloadManager {
     @JvmStatic
     fun isActive(): Boolean = jobId != null || statusText != null
 
+    /** Full video duration (seconds) of the active download, or 0 — so Now Playing can show the
+     *  real total time immediately instead of VLC's still-growing length. */
+    @JvmStatic
+    fun totalDurationSec(): Long = if (isActive()) durationSec else 0
+
     /**
      * Starts a download+play job for [ytUrl]. Cancels any previous job first. [subtitleUrl] is
      * attached once playback begins (may be null).
@@ -62,6 +67,7 @@ object YtDownloadManager {
         audioUrl: String,
         durationSec: Long,
         title: String?,
+        channel: String?,
         authority: String,
         subtitleUrl: String?,
         subtitleName: String?
@@ -92,7 +98,7 @@ object YtDownloadManager {
         val h = host ?: return
         val p = port
         GlobalScope.launch(Dispatchers.IO) {
-            val id = MuxClient.start(h, p, videoUrl, audioUrl)
+            val id = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "")
             withContext(Dispatchers.Main) {
                 if (id == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"

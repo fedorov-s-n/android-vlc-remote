@@ -244,6 +244,12 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
         int time = status.getTime();
         int length = status.getLength();
+        // During a YouTube download the file (and VLC's reported length) only covers what has
+        // been downloaded; show the real full duration from NewPipe instead.
+        long ytDuration = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.totalDurationSec();
+        if (ytDuration > 0) {
+            length = (int) ytDuration;
+        }
         mSeekPosition.setMax(length);
 
         // Call setKeyProgressIncrement after calling setMax because the

@@ -23,11 +23,14 @@ object MuxClient {
         val done get() = state == "DONE"
     }
 
-    /** @return the job id, or null on failure / helper busy. */
-    fun start(host: String, port: Int, videoUrl: String, audioUrl: String): String? {
+    /** @return the job id, or null on failure / helper busy. [title]/[artist] are embedded in
+     *  the muxed file so VLC's Now Playing shows the video + channel. */
+    fun start(host: String, port: Int, videoUrl: String, audioUrl: String, title: String, artist: String): String? {
         val v = URLEncoder.encode(videoUrl, "UTF-8")
         val a = URLEncoder.encode(audioUrl, "UTF-8")
-        val body = get("http://$host:$port/mux/start?v=$v&a=$a") ?: return null
+        val t = URLEncoder.encode(title, "UTF-8")
+        val c = URLEncoder.encode(artist, "UTF-8")
+        val body = get("http://$host:$port/mux/start?v=$v&a=$a&t=$t&c=$c") ?: return null
         val id = body.trim()
         // Errors come back as "ERROR: ..." with a non-2xx code -> get() returns null for those.
         return if (id.isEmpty() || id.startsWith("ERROR")) null else id

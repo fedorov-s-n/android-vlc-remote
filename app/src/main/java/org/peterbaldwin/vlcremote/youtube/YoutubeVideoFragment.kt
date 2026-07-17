@@ -206,9 +206,10 @@ class YoutubeVideoFragment : Fragment() {
         // All qualities play through the host download+mux mechanism.
         RezkaPlayback.clear()
         YoutubePlayback.clear()
+        val titleWithQuality = if (quality.label.isNotBlank()) "${v.title} [${quality.label}]" else v.title
         YtDownloadManager.start(
             requireContext(), url, quality.url, audioUrl, v.durationSec,
-            v.title, authority, chosenSub?.url, subName
+            titleWithQuality, v.uploader, authority, chosenSub?.url, subName
         )
         Toast.makeText(requireContext(), getString(R.string.youtube_downloading), Toast.LENGTH_SHORT).show()
     }
