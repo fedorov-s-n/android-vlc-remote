@@ -29,54 +29,6 @@
             <!-- Main info -->
             <include layout="@layout/inflate_fragment_film_main" />
 
-            <!--Rating-->
-            <RelativeLayout
-                android:id="@+id/fragment_film_rating_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="10dp">
-
-                <com.willy.ratingbar.ScaleRatingBar
-                    android:id="@+id/fragment_film_srb_rating_hdrezka_select"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
-                    android:elevation="10dp"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    app:srb_clearRatingEnabled="true"
-                    app:srb_clickable="true"
-                    app:srb_drawableEmpty="@drawable/ic_baseline_star_transparent_24"
-                    app:srb_drawableFilled="@drawable/ic_baseline_star_active_24"
-                    app:srb_isIndicator="false"
-                    app:srb_numStars="10"
-                    app:srb_scrollable="true"
-                    app:srb_starHeight="30dp"
-                    app:srb_starPadding="5dp"
-                    app:srb_starWidth="30dp"
-                    app:srb_stepSize="1" />
-
-                <com.willy.ratingbar.ScaleRatingBar
-                    android:id="@+id/fragment_film_srb_rating_hdrezka"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
-                    android:elevation="5dp"
-                    app:srb_clearRatingEnabled="true"
-                    app:srb_clickable="false"
-                    app:srb_drawableEmpty="@drawable/ic_baseline_star_empty_24"
-                    app:srb_drawableFilled="@drawable/ic_baseline_star_24"
-                    app:srb_isIndicator="true"
-                    app:srb_minimumStars="1"
-                    app:srb_numStars="10"
-                    app:srb_scrollable="false"
-                    app:srb_starHeight="30dp"
-                    app:srb_starPadding="5dp"
-                    app:srb_starWidth="30dp"
-                    app:srb_stepSize="0.1" />
-
-            </RelativeLayout>
-
             <!-- Actors -->
             <LinearLayout
                 android:id="@+id/fragment_film_ll_actorsContainer"

@@ -650,10 +650,13 @@ object FilmModel {
 
             for (str in split) {
                 try {
+                    // The quality label inside [ ] can contain HTML (e.g. premium
+                    // "1080p Ultra" wrapped in <span>/<img>); strip it to plain text.
+                    val quality = Jsoup.parse(str.substring(1, str.indexOf("]"))).text().trim()
                     if (str.contains(" or ")) {
-                        parsedStreams.add(Stream(str.split(" or ").toTypedArray()[1], str.substring(1, str.indexOf("]"))))
+                        parsedStreams.add(Stream(str.split(" or ").toTypedArray()[1], quality))
                     } else {
-                        parsedStreams.add(Stream(str.substring(str.indexOf("]") + 1), str.substring(1, str.indexOf("]"))))
+                        parsedStreams.add(Stream(str.substring(str.indexOf("]") + 1), quality))
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

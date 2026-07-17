@@ -348,6 +348,35 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
         }
     }
 
+    /** Fetches the movie streams for a translation and reports back (for the quality/subtitle spinners). */
+    fun loadStreamsForMovie(translation: Voice, onLoaded: () -> Unit) {
+        GlobalScope.launch {
+            try {
+                if (translation.streams == null) {
+                    film.filmId?.let { FilmModel.getStreamsByTranslationId(it, translation) }
+                }
+                withContext(Dispatchers.Main) { onLoaded() }
+            } catch (e: Exception) {
+                catchException(e, filmView)
+            }
+        }
+    }
+
+    /** Fetches the streams/subtitles for a series episode and reports back (for the quality/subtitle spinners). */
+    fun loadStreamsForEpisode(translation: Voice, season: String, episode: String, onLoaded: () -> Unit) {
+        GlobalScope.launch {
+            try {
+                film.filmId?.let {
+                    translation.selectedEpisode = Pair(season, episode)
+                    FilmModel.getStreamsByEpisodeId(translation, it, season, episode)
+                }
+                withContext(Dispatchers.Main) { onLoaded() }
+            } catch (e: Exception) {
+                catchException(e, filmView)
+            }
+        }
+    }
+
     fun updateWatchLater(translation: Voice) {
         GlobalScope.launch {
             try {

@@ -133,7 +133,6 @@
                 android:textColor="@color/white"
                 android:textSize="@dimen/normal_text" />
 
-
             <TextView
                 android:id="@+id/fragment_film_tv_directors"
                 android:layout_width="match_parent"
@@ -180,59 +179,118 @@
                 android:textColor="@color/white"
                 android:textSize="@dimen/normal_text" />
 
-            <!-- <LinearLayout
-                 android:weightSum="3"
-                 android:gravity="center"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content">
-
-                 <ImageView
-                     android:layout_weight="1"
-                     android:id="@+id/fragment_film_iv_bookmark"
-                     android:layout_width="0dp"
-                     android:layout_height="50dp"
-                     android:layout_margin="5dp"
-                     android:background="#00000000"
-                     android:clickable="true"
-                     android:contentDescription="bookmarks button"
-                     android:focusable="true"
-                     android:foreground="?attr/selectableItemBackground"
-                     android:nextFocusRight="@id/fragment_film_iv_share"
-                     android:nextFocusDown="@id/fragment_film_iv_poster"
-                     android:src="@drawable/ic_baseline_star_bookmark_24" />
-
-                 <ImageView
-                     android:layout_weight="1"
-                     android:id="@+id/fragment_film_tv_download"
-                     android:layout_width="0dp"
-                     android:layout_height="50dp"
-                     android:layout_margin="5dp"
-                     android:background="#00000000"
-                     android:clickable="true"
-                     android:contentDescription="bookmarks button"
-                     android:focusable="true"
-                     android:foreground="?attr/selectableItemBackground"
-                     android:nextFocusRight="@id/fragment_film_iv_share"
-                     android:nextFocusDown="@id/fragment_film_iv_poster"
-                     android:src="@drawable/ic_baseline_arrow_circle_down_24" />
-
-                 <ImageView
-                     android:layout_weight="1"
-                     android:id="@+id/fragment_film_iv_share"
-                     android:layout_width="0dp"
-                     android:layout_height="50dp"
-                     android:layout_margin="5dp"
-                     android:background="#00000000"
-                     android:clickable="true"
-                     android:contentDescription="share button"
-                     android:focusable="true"
-                     android:foreground="?attr/selectableItemBackground"
-                     android:nextFocusLeft="@id/fragment_film_iv_bookmark"
-                     android:nextFocusDown="@id/fragment_film_iv_poster"
-                     android:src="@drawable/ic_baseline_share_24" />
-
-             </LinearLayout>-->
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- Stream selectors: voice / season / episode / quality / subtitles.
+         Cascading: changing one may repopulate the following ones. -->
+    <LinearLayout
+        android:id="@+id/fragment_film_ll_selectors"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sel_voice"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text" />
+
+        <Spinner
+            android:id="@+id/fragment_film_sp_voice"
+            android:background="@drawable/bg_spinner"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:minHeight="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/fragment_film_tv_season_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sel_season"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text"
+            android:visibility="gone" />
+
+        <Spinner
+            android:id="@+id/fragment_film_sp_season"
+            android:background="@drawable/bg_spinner"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:minHeight="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/fragment_film_tv_episode_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sel_episode"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text"
+            android:visibility="gone" />
+
+        <Spinner
+            android:id="@+id/fragment_film_sp_episode"
+            android:background="@drawable/bg_spinner"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:minHeight="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sel_quality"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text" />
+
+        <Spinner
+            android:id="@+id/fragment_film_sp_quality"
+            android:background="@drawable/bg_spinner"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:minHeight="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sel_subtitle"
+            android:textColor="@color/white"
+            android:textSize="@dimen/small_text" />
+
+        <Spinner
+            android:id="@+id/fragment_film_sp_subtitle"
+            android:background="@drawable/bg_spinner"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:minHeight="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <!-- Plot -->
@@ -264,14 +322,12 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:weightSum="3">
+        android:gravity="center">
 
         <LinearLayout
             android:id="@+id/fragment_film_btn_bookmark"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:clickable="true"
             android:contentDescription="bookmarks button"
             android:focusable="true"
@@ -294,104 +350,6 @@
                 android:textColor="@color/white"
                 android:textSize="@dimen/normal_text" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/fragment_film_btn_download"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_margin="5dp"
-                android:background="#00000000"
-                android:contentDescription="bookmarks button"
-                android:src="@drawable/ic_baseline_arrow_circle_down_24" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/download_name"
-                android:textColor="@color/white"
-                android:textSize="@dimen/normal_text" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/fragment_film_btn_share"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_margin="5dp"
-                android:background="#00000000"
-                android:contentDescription="share button"
-                android:src="@drawable/ic_baseline_share_24" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/share_name"
-                android:textColor="@color/white"
-                android:textSize="@dimen/normal_text" />
-        </LinearLayout>
-    </LinearLayout>
-
-
-    <!-- Open in player -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/fragment_film_tv_open_player"
-            style="@style/app_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:padding="10dp"
-            android:text="@string/start_watching" />
-    </LinearLayout>
-
-    <!-- Player -->
-    <LinearLayout
-        android:id="@+id/fragment_film_ll_player_container"
-        android:layout_width="match_parent"
-        android:layout_height="350dp"
-        android:layout_margin="10dp"
-        android:layout_marginBottom="5dp"
-        android:gravity="center"
-        android:orientation="vertical">
-
-        <ProgressBar
-            android:id="@+id/fragment_film_pb_player_loading"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <WebView
-            android:id="@+id/fragment_film_wv_player"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone" />
     </LinearLayout>
 
 </LinearLayout>

@@ -84,6 +84,19 @@ class FilmFragment : Fragment(), FilmView {
     private var wl: PowerManager.WakeLock? = null
     private var isWebviewInstalled = true
 
+    private lateinit var voiceSpinner: Spinner
+    private lateinit var seasonSpinner: Spinner
+    private lateinit var episodeSpinner: Spinner
+    private lateinit var qualitySpinner: Spinner
+    private lateinit var subtitleSpinner: Spinner
+    private var seasonLabel: View? = null
+    private var episodeLabel: View? = null
+    private var selCurrentVoice: Voice? = null
+    private var selSeasons: LinkedHashMap<String, ArrayList<String>>? = null
+    private var selSeasonKeys: List<String> = emptyList()
+    private var selEpisodes: List<String> = emptyList()
+    private var selSeason: String? = null
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         fragmentListener = hdrezkaHost()
@@ -148,7 +161,6 @@ class FilmFragment : Fragment(), FilmView {
         currentView = inflater.inflate(R.layout.fragment_film, container, false)
 
         progressBar = currentView.findViewById(R.id.fragment_film_pb_loading)
-        playerView = currentView.findViewById(R.id.fragment_film_wv_player)
         commentsList = currentView.findViewById(R.id.fragment_film_rv_comments)
 
         filmPresenter = FilmPresenter(this, (arguments?.getSerializable(FILM_ARG) as Film?)!!)
@@ -161,17 +173,12 @@ class FilmFragment : Fragment(), FilmView {
 
         initFullSizePoster()
 
-        initDownloadBtn()
-
-        initPlayer()
+        initSelectors()
 
         return currentView
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        if (SettingsData.deviceType == DeviceType.TV) {
-            currentView.findViewById<TextView>(R.id.fragment_film_tv_open_player).requestFocus()
-        }
         super.onViewCreated(view, savedInstanceState)
     }
 
@@ -227,34 +234,6 @@ class FilmFragment : Fragment(), FilmView {
         }
     }
 
-    private fun initDownloadBtn() {
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                // Permission is granted. Continue the action or workflow in your
-                filmPresenter.showTranslations(true)
-            } else {
-                Toast.makeText(requireContext(), getString(R.string.perm_write_hint), Toast.LENGTH_LONG).show()
-            }
-        }
-        val downloadBtn = currentView.findViewById<View>(R.id.fragment_film_btn_download)
-        downloadBtn.setOnClickListener {
-            when (PackageManager.PERMISSION_GRANTED) {
-                ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) -> {
-                    filmPresenter.showTranslations(true)
-                }
-                else -> {
-                    // You can directly ask for the permission.
-                    // The registered ActivityResultCallback gets the result of this request.
-                    requestPermissionLauncher.launch(
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    )
-                }
-            }
-        }
-
-        Highlighter.highlightText(downloadBtn, requireContext())
-    }
-
     override fun setTrailer(link: String?) {
         val trailerBtn = currentView.findViewById<TextView>(R.id.fragment_film_tv_trailer)
         if (link != null && link.isNotEmpty()) {
@@ -281,78 +260,131 @@ class FilmFragment : Fragment(), FilmView {
         }
     }
 
-    private fun initPlayer() {
-        val openPlayBtn = currentView.findViewById<TextView>(R.id.fragment_film_tv_open_player)
+    // ---- Stream selectors (voice / season / episode / quality / subtitles) ----
 
-        if (SettingsData.deviceType == DeviceType.TV) {
-            openPlayBtn.requestFocus()
+    private fun initSelectors() {
+        voiceSpinner = currentView.findViewById(R.id.fragment_film_sp_voice)
+        seasonSpinner = currentView.findViewById(R.id.fragment_film_sp_season)
+        episodeSpinner = currentView.findViewById(R.id.fragment_film_sp_episode)
+        qualitySpinner = currentView.findViewById(R.id.fragment_film_sp_quality)
+        subtitleSpinner = currentView.findViewById(R.id.fragment_film_sp_subtitle)
+        seasonLabel = currentView.findViewById(R.id.fragment_film_tv_season_label)
+        episodeLabel = currentView.findViewById(R.id.fragment_film_tv_episode_label)
+    }
+
+    private fun <T> spinnerAdapter(items: List<T>): ArrayAdapter<T> {
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, items)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        return adapter
+    }
+
+    /** Populates the voice spinner and wires the cascade. Called once film data is ready. */
+    private fun populateSelectors(film: Film) {
+        val translations = film.translations
+        if (translations.isNullOrEmpty()) {
+            currentView.findViewById<View>(R.id.fragment_film_ll_selectors).visibility = View.GONE
+            return
+        }
+        val isMovie = film.isMovieTranslation == true
+
+        seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val season = selSeasonKeys.getOrNull(position) ?: return
+                selSeason = season
+                selEpisodes = selSeasons?.get(season)?.toList() ?: emptyList()
+                episodeSpinner.adapter = spinnerAdapter(selEpisodes.map { getString(R.string.sel_episode) + " " + it })
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        if (SettingsData.isPlayer == true || SettingsData.deviceType == DeviceType.TV) {
-            val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    filmPresenter.showTranslations(false)
+        episodeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val voice = selCurrentVoice ?: return
+                val season = selSeason ?: return
+                val episode = selEpisodes.getOrNull(position) ?: return
+                loadEpisodeStreams(voice, season, episode)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        voiceSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val voice = translations.getOrNull(position) ?: return
+                selCurrentVoice = voice
+                clearStreamSpinners()
+                if (isMovie) {
+                    setSeriesSelectorsVisible(false)
+                    loadMovieStreams(voice)
                 } else {
-                    Toast.makeText(requireContext(), getString(R.string.perm_write_hint), Toast.LENGTH_LONG).show()
-                }
-            }
-
-            openPlayBtn.setOnClickListener {
-                when (PackageManager.PERMISSION_GRANTED) {
-                    ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) -> {
-                        filmPresenter.showTranslations(false)
-                    }
-                    else -> {
-                        // You can directly ask for the permission.
-                        // The registered ActivityResultCallback gets the result of this request.
-                        requestPermissionLauncher.launch(
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        )
+                    setSeriesSelectorsVisible(true)
+                    filmPresenter.initTranslationsSeries(voice) { seasons ->
+                        selSeasons = seasons
+                        selSeasonKeys = seasons.keys.toList()
+                        seasonSpinner.adapter = spinnerAdapter(selSeasonKeys.map { getString(R.string.sel_season) + " " + it })
                     }
                 }
             }
 
-            if (SettingsData.deviceType == DeviceType.MOBILE) {
-                currentView.findViewById<LinearLayout>(R.id.fragment_film_ll_player_container).visibility = View.GONE
-            }
-
-            Highlighter.highlightButton(openPlayBtn, requireContext())
-        } else {
-            filmPresenter.initPlayer()
-
-            openPlayBtn.visibility = View.GONE
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
+        voiceSpinner.adapter = spinnerAdapter(translations.map { it.name ?: "" })
+        // Prefer the original voice when available.
+        val voiceIdx = translations.indexOfFirst { it.name?.contains("Оригинал", true) == true }
+        if (voiceIdx > 0) voiceSpinner.setSelection(voiceIdx)
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    private fun setSeriesSelectorsVisible(visible: Boolean) {
+        val v = if (visible) View.VISIBLE else View.GONE
+        seasonLabel?.visibility = v
+        seasonSpinner.visibility = v
+        episodeLabel?.visibility = v
+        episodeSpinner.visibility = v
+    }
+
+    private fun clearStreamSpinners() {
+        qualitySpinner.adapter = spinnerAdapter(emptyList<String>())
+        subtitleSpinner.adapter = spinnerAdapter(emptyList<String>())
+    }
+
+    private fun loadMovieStreams(voice: Voice) {
+        filmPresenter.loadStreamsForMovie(voice) { populateQualityAndSubtitles(voice) }
+    }
+
+    private fun loadEpisodeStreams(voice: Voice, season: String, episode: String) {
+        filmPresenter.loadStreamsForEpisode(voice, season, episode) { populateQualityAndSubtitles(voice) }
+    }
+
+    private fun populateQualityAndSubtitles(voice: Voice) {
+        val streams = voice.streams ?: arrayListOf()
+        qualitySpinner.adapter = spinnerAdapter(streams.map { it.quality })
+        // Prefer 1080p; otherwise fall back to the highest available quality.
+        if (streams.isNotEmpty()) {
+            val qualityIdx = streams.indexOfFirst { it.quality.equals("1080p", true) }
+                .let { if (it >= 0) it else streams.lastIndex }
+            if (qualityIdx > 0) qualitySpinner.setSelection(qualityIdx)
+        }
+
+        val subs = voice.subtitles ?: arrayListOf()
+        val subItems = arrayListOf(getString(R.string.msg_subtitle_off))
+        subItems.addAll(subs.map { it.lang })
+        subtitleSpinner.adapter = spinnerAdapter(subItems)
+        // Prefer English subtitles when available.
+        val subIdx = subItems.indexOfFirst { it.contains("english", true) }
+        if (subIdx > 0) subtitleSpinner.setSelection(subIdx)
+    }
+
     override fun setPlayer(link: String) {
-        val container: LinearLayout = currentView.findViewById(R.id.fragment_film_ll_player_container)
-
-        playerView?.settings?.userAgentString = SettingsData.useragent
-        playerView?.settings?.javaScriptEnabled = true
-        playerView?.settings?.domStorageEnabled = true
-        playerView?.addJavascriptInterface(WebAppInterface(requireActivity()), "Android")
-        playerView?.addJavascriptInterface(PlayerJsInterface(requireContext()), "JSOUT")
-        playerView?.webViewClient = PlayerWebViewClient(requireContext(), this, filmPresenter.film) {
-            container.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
-            currentView.findViewById<ProgressBar>(R.id.fragment_film_pb_player_loading).visibility = View.GONE
-            playerView?.visibility = View.VISIBLE
-        }
-
-        playerView?.webChromeClient = activity?.let { PlayerChromeClient(it) }
-        playerView?.loadUrl(link)
-    }
-
-    class WebAppInterface(private val act: FragmentActivity) {
-        @JavascriptInterface
-        fun updateWatchLater() {
-            (act as? HdrezkaHost)?.redrawPage(UpdateItem.WATCH_LATER_CHANGED)
-        }
+        // Native player removed; selectors above expose the stream choices instead.
     }
 
     override fun setFilmBaseData(film: Film) {
         filmPresenter.initActors()
         filmPresenter.initFullSizeImage()
+
+        populateSelectors(film)
 
         Picasso.get().load(film.posterPath).into(currentView.findViewById<ImageView>(R.id.fragment_film_iv_poster))
 
@@ -774,16 +806,7 @@ class FilmFragment : Fragment(), FilmView {
     }
 
     override fun setShareBtn(title: String, link: String) {
-        val shareBtn: View = currentView.findViewById(R.id.fragment_film_btn_share)
-        shareBtn.setOnClickListener {
-            val sharingIntent = Intent(Intent.ACTION_SEND)
-            sharingIntent.type = "text/plain"
-            val body: String = getString(R.string.share_body, title, link)
-            sharingIntent.putExtra(Intent.EXTRA_TEXT, body)
-            startActivity(sharingIntent)
-        }
-
-        Highlighter.highlightText(shareBtn, requireContext())
+        // Share button removed from the film page.
     }
 
     override fun showConnectionError(type: IConnection.ErrorType, errorText: String) {
@@ -885,41 +908,8 @@ class FilmFragment : Fragment(), FilmView {
         Toast.makeText(requireContext(), getString(R.string.enter_comment_text), Toast.LENGTH_SHORT).show()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun setHRrating(rating: Float, isActive: Boolean) {
-        if (SettingsData.deviceType == DeviceType.TV) {
-            val tvRatingBar: ScaleRatingBar = currentView.findViewById(R.id.fragment_film_srb_rating_hdrezka_tv)
-
-            if (rating == -1f) {
-                currentView.findViewById<RelativeLayout>(R.id.fragment_film_rating_layout).visibility = View.GONE
-                tvRatingBar.visibility = View.GONE
-                return
-            }
-            currentView.findViewById<RelativeLayout>(R.id.fragment_film_rating_layout).visibility = View.GONE
-            tvRatingBar.rating = rating
-        } else {
-            val selectableRatingBar: ScaleRatingBar = currentView.findViewById(R.id.fragment_film_srb_rating_hdrezka_select)
-            val ratingBar: ScaleRatingBar = currentView.findViewById(R.id.fragment_film_srb_rating_hdrezka)
-
-            if (rating == -1f) {
-                currentView.findViewById<RelativeLayout>(R.id.fragment_film_rating_layout).visibility = View.GONE
-                return
-            }
-            selectableRatingBar.setIsIndicator(isActive)
-            ratingBar.rating = rating
-            selectableRatingBar.setOnTouchListener { view, motionEvent ->
-                if (motionEvent.action == MotionEvent.ACTION_UP) {
-                    selectableRatingBar.visibility = View.GONE
-
-                    if (UserData.isLoggedIn == true) {
-                        filmPresenter.updateRating(selectableRatingBar.rating)
-                    } else {
-                        Toast.makeText(requireContext(), getString(R.string.need_register), Toast.LENGTH_SHORT).show()
-                    }
-                }
-                false
-            }
-        }
+        // Rating stars removed from the film page.
     }
 
     override fun showTranslations(translations: ArrayList<Voice>, isDownload: Boolean, isMovie: Boolean) {
