@@ -93,6 +93,14 @@ object YtDownloadManager {
         prevMs = 0L
         downloadedSec = 0L
 
+        // Stop the previous video immediately so it doesn't keep playing/showing until the new
+        // download reaches its playback point.
+        try {
+            MediaServer(ctx, authority).status().command.playback.stop()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
         if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
             statusText = "Download helper disabled in settings"
@@ -249,6 +257,7 @@ object YtDownloadManager {
         jobKey = null
         playStarted = false
         statusText = null
+        title = null
         handler.removeCallbacksAndMessages(null)
         if (id != null && h != null) {
             GlobalScope.launch(Dispatchers.IO) { MuxClient.cancel(h, p, id) }

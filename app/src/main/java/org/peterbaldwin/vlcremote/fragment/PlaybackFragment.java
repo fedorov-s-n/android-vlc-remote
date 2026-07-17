@@ -240,9 +240,12 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
             }
         }
 
-        // YouTube "Best" download progress / completion indicator.
+        // YouTube "Best" download progress / completion indicator (only if enabled in settings).
         if (mDownloadStatus != null) {
-            String dl = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.statusText();
+            boolean showDl = androidx.preference.PreferenceManager
+                    .getDefaultSharedPreferences(getActivity())
+                    .getBoolean("youtube_download_status", true);
+            String dl = showDl ? org.peterbaldwin.vlcremote.youtube.YtDownloadManager.statusText() : null;
             if (dl == null) {
                 mDownloadStatus.setVisibility(View.GONE);
             } else {

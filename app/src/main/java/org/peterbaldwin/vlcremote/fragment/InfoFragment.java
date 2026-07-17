@@ -103,9 +103,13 @@ public class InfoFragment extends Fragment {
             mCurrentFileName = name;
         }
         mCurrentTitle = title;
+        // If the file declares its own title, trust its embedded metadata (title/artist/album)
+        // instead of guessing from the filename. Untitled files still get the filename parse
+        // (better for scene-release movie names).
+        boolean hasEmbeddedTitle = !TextUtils.isEmpty(title);
         // it is possible for a status change to be sent before vlc has fully read
         // the file metadata and not output any stream information.
-        if(!status.getTrack().containsStream() || status.getTrack().hasVideoStream()) {
+        if(!hasEmbeddedTitle && (!status.getTrack().containsStream() || status.getTrack().hasVideoStream())) {
             Media media = mMediaParser.parse(mCurrentFileName);
             if(media != null) {
                 setMediaDisplayInfo(media, mCurrentFileName);

@@ -187,6 +187,13 @@
         android:icon="@drawable/ic_tab_youtube"
         android:persistent="false">
 
+        <CheckBoxPreference
+            android:key="youtube_download_status"
+            android:title="@string/pref_youtube_download_status_title"
+            android:summary="@string/pref_youtube_download_status_summary"
+            android:defaultValue="true"
+            android:persistent="true" />
+
         <EditTextPreference
             android:key="youtube_history_size"
             android:title="@string/pref_youtube_history_size_title"
