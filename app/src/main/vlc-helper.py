@@ -11,8 +11,9 @@ VLC не умеет брать по URL сам:
 - POST /content?name=...       — сохраняет тело запроса во временный файл
                                  (напр. субтитры), возвращает путь (text/plain).
 - GET  /mux/start?v=..&a=..     — запускает фоновую склейку video+audio (ffmpeg,
-                                 copy) в MKV (играбелен по мере роста, любой кодек);
-                                 возвращает id загрузки.
+                                 copy) во фрагментированный mp4 (играбелен по мере
+                                 роста, любой кодек, метаданные видны VLC);
+                                 возвращает путь к файлу.
 - GET  /mux/status?id=..        — "RUNNING <bytes> <total> <ms> <path>"
                                  | "DONE <bytes> <total> <ms> <path>"
                                  | "ERROR <code>" | "UNKNOWN".
@@ -130,10 +131,10 @@ def _active_count() -> int:
 
 
 def _resolve_jid(pathlike: str) -> str:
-    """Accept a full path, a basename (mux_<jid>.mkv) or a bare id, return the job id."""
+    """Accept a full path, a basename (mux_<jid>.mp4) or a bare id, return the job id."""
     base = os.path.basename(pathlike or "")
-    if base.startswith("mux_") and base.endswith(".mkv"):
-        return base[len("mux_"):-len(".mkv")]
+    if base.startswith("mux_") and base.endswith(".mp4"):
+        return base[len("mux_"):-len(".mp4")]
     return pathlike or ""
 
 
@@ -148,15 +149,16 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
                 return job["path"], None
         if _active_count() >= MAX_JOBS:
             return None, "busy: %d downloads already running" % MAX_JOBS
-        path = os.path.join(tempfile.gettempdir(), "mux_%s.mkv" % jid)
+        path = os.path.join(tempfile.gettempdir(), "mux_%s.mp4" % jid)
         try:
             if os.path.exists(path):
                 os.remove(path)
         except OSError:
             pass
-        # Matroska (MKV) holds any codec (AVC/VP9/AV1 + AAC/Opus) and is playable while still
-        # being written, so VLC can start during the download. Embed title/artist so VLC's
-        # Now Playing shows the video + channel instead of the temp filename.
+        # Fragmented mp4: playable while still being written (VLC can start during download),
+        # holds any codec (AVC/VP9/AV1 + AAC/Opus via -c copy), AND unlike MKV, VLC exposes its
+        # title/artist/album tags to the Now Playing status. Embed them so it shows the video /
+        # channel / playlist instead of the temp filename.
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", v, "-i", a, "-c", "copy"]
         if title:
             cmd += ["-metadata", "title=" + title]
@@ -164,7 +166,7 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
             cmd += ["-metadata", "artist=" + artist]
         if album:
             cmd += ["-metadata", "album=" + album]
-        cmd += ["-f", "matroska", path]
+        cmd += ["-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", path]
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _mux_jobs[jid] = {"path": path, "proc": proc,
                           "total": _clen(v) + _clen(a), "start": time.time(),

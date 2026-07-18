@@ -231,7 +231,7 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         // currently playing (mux_<id>.mkv) so the progress indicator + polling resume.
         if (!org.peterbaldwin.vlcremote.youtube.YtDownloadManager.isActive() && status.getTrack() != null) {
             String fn = status.getTrack().getName();
-            if (fn != null && fn.startsWith("mux_") && fn.endsWith(".mkv")) {
+            if (fn != null && fn.startsWith("mux_") && fn.endsWith(".mp4")) {
                 Preferences prefs = Preferences.get(getActivity());
                 String authority = prefs == null ? null : prefs.getAuthority();
                 if (authority != null) {
