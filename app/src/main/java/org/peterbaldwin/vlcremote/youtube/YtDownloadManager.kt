@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.preference.PreferenceManager
 import com.falcofemoralis.hdrezkaapp.utils.SubtitleAttacher
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -24,6 +25,17 @@ object YtDownloadManager {
     // polls whose speed (seconds of video fetched per wall-second) is >= RATE_MIN.
     private const val RATE_MIN = 1.1
     private const val RATE_STREAK = 2
+    private const val KEY_RESUME = "yt_dl_resume"
+
+    /** Persisted so the playlist queue survives an app restart (matched by the playing file). */
+    private data class ResumeState(
+        val file: String,
+        val urls: List<String>,
+        val titles: List<String>,
+        val index: Int,
+        val quality: String?,
+        val playlist: String?
+    )
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -42,6 +54,13 @@ object YtDownloadManager {
     private var prevMs = 0L
     private var downloadedSec = 0L
     private var resuming = false
+
+    // Playlist queue so the Now Playing next/previous buttons and autoplay can step through it.
+    private var queue: List<String> = emptyList()
+    private var queueTitles: List<String> = emptyList()
+    private var queueIndex: Int = -1
+    private var qualityLabel: String? = null
+    private var playlistName: String? = null
 
     /** Text for the Now Playing tab; null when nothing to show. Persists until [cancel]. */
     @Volatile
@@ -62,13 +81,77 @@ object YtDownloadManager {
     @JvmStatic
     fun downloadedSec(): Long = if (isActive()) downloadedSec else 0
 
+    /** True while playing from a YouTube playlist — the Now Playing next/prev + autoplay use it. */
+    @JvmStatic
+    fun hasQueue(): Boolean = isActive() && queue.isNotEmpty()
+
     /**
-     * Starts a download+play job for [ytUrl]. Cancels any previous job first. [subtitleUrl] is
-     * attached once playback begins (may be null).
+     * Starts a download+play job for a video the fragment already resolved. [queueUrls]/[index]
+     * give the surrounding playlist (empty if none) for next/previous; [qualityLabel] is reapplied
+     * to the next/previous videos.
      */
     fun start(
         context: Context,
-        ytUrl: String,
+        videoUrl: String,
+        audioUrl: String,
+        durationSec: Long,
+        title: String?,
+        channel: String?,
+        album: String?,
+        authority: String,
+        subtitleUrl: String?,
+        subtitleName: String?,
+        queueUrls: List<String>,
+        queueTitles: List<String>,
+        queueIndex: Int,
+        qualityLabel: String?
+    ) {
+        cancel()
+        this.queue = queueUrls
+        this.queueTitles = queueTitles
+        this.queueIndex = queueIndex
+        this.qualityLabel = qualityLabel
+        this.playlistName = album
+        beginDownload(context, videoUrl, audioUrl, durationSec, title, channel, album, authority, subtitleUrl, subtitleName)
+    }
+
+    /** Steps to the next / previous playlist entry, resolving + downloading it. */
+    @JvmStatic
+    fun playNext(context: Context): Boolean = navigate(context, +1)
+
+    @JvmStatic
+    fun playPrevious(context: Context): Boolean = navigate(context, -1)
+
+    private fun navigate(context: Context, dir: Int): Boolean {
+        val newIndex = queueIndex + dir
+        if (newIndex !in queue.indices) return false
+        val auth = authority ?: return false
+        val ctx = appContext ?: context.applicationContext
+        queueIndex = newIndex
+        val url = queue[newIndex]
+        val label = qualityLabel
+        val pl = playlistName
+        cancelJob()
+        try { MediaServer(ctx, auth).status().command.playback.stop() } catch (e: Exception) { e.printStackTrace() }
+        statusText = "Preparing…"
+        GlobalScope.launch(Dispatchers.IO) {
+            val v = try { YoutubeClient.video(url) } catch (e: Exception) { e.printStackTrace(); null }
+            withContext(Dispatchers.Main) {
+                if (v == null) { statusText = "Download failed"; return@withContext }
+                val q = v.qualities.firstOrNull { it.label == label }
+                    ?: v.qualities.firstOrNull { it.label.startsWith("1080") }
+                    ?: v.qualities.firstOrNull()
+                val audio = v.audioUrl
+                if (q == null || audio == null) { statusText = "No playable stream"; return@withContext }
+                val titleQ = if (q.label.isNotBlank()) "${v.title} [${q.label}]" else v.title
+                beginDownload(ctx, q.url, audio, v.durationSec, titleQ, v.uploader, pl, auth, null, null)
+            }
+        }
+        return true
+    }
+
+    private fun beginDownload(
+        context: Context,
         videoUrl: String,
         audioUrl: String,
         durationSec: Long,
@@ -79,7 +162,7 @@ object YtDownloadManager {
         subtitleUrl: String?,
         subtitleName: String?
     ) {
-        cancel()
+        cancelJob()
         val ctx = context.applicationContext
         appContext = ctx
         this.authority = authority
@@ -121,8 +204,29 @@ object YtDownloadManager {
                     return@withContext
                 }
                 jobKey = key
+                saveResume(ctx)
                 poll()
             }
+        }
+    }
+
+    private fun saveResume(ctx: Context) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
+        val key = jobKey
+        if (queue.isEmpty() || key == null) {
+            prefs.edit().remove(KEY_RESUME).apply()
+            return
+        }
+        val state = ResumeState(java.io.File(key).name, queue, queueTitles, queueIndex, qualityLabel, playlistName)
+        prefs.edit().putString(KEY_RESUME, Gson().toJson(state)).apply()
+    }
+
+    private fun readResume(ctx: Context): ResumeState? {
+        val json = PreferenceManager.getDefaultSharedPreferences(ctx).getString(KEY_RESUME, null) ?: return null
+        return try {
+            Gson().fromJson(json, ResumeState::class.java)
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -156,6 +260,17 @@ object YtDownloadManager {
                 title = null
                 subtitleUrl = null
                 playStarted = true  // VLC is already playing this file
+
+                // Restore the playlist queue (persisted at download start) if it's for this file,
+                // so next/previous + autoplay work after an app restart.
+                val rs = readResume(ctx)
+                if (rs != null && rs.file == java.io.File(playingFileName).name) {
+                    queue = rs.urls
+                    queueTitles = rs.titles
+                    queueIndex = rs.index
+                    qualityLabel = rs.quality
+                    playlistName = rs.playlist
+                }
                 prevBytes = st.bytes
                 prevMs = st.ms
                 if (st.done) {
@@ -248,9 +363,9 @@ object YtDownloadManager {
         return String.format(Locale.US, "%d:%02d", s / 60, s % 60)
     }
 
-    /** Cancels the job (kills the host download, deletes the file) and clears the indicator. */
-    @JvmStatic
-    fun cancel() {
+    /** Cancels the current helper job (kills the host download, deletes the file) and clears the
+     *  per-video state + indicator, but keeps the playlist queue for next/previous. */
+    private fun cancelJob() {
         val id = jobKey
         val h = host
         val p = port
@@ -262,5 +377,17 @@ object YtDownloadManager {
         if (id != null && h != null) {
             GlobalScope.launch(Dispatchers.IO) { MuxClient.cancel(h, p, id) }
         }
+    }
+
+    /** Cancels the job and forgets everything (called when another source starts / playlist cleared). */
+    @JvmStatic
+    fun cancel() {
+        cancelJob()
+        queue = emptyList()
+        queueTitles = emptyList()
+        queueIndex = -1
+        qualityLabel = null
+        playlistName = null
+        appContext?.let { PreferenceManager.getDefaultSharedPreferences(it).edit().remove(KEY_RESUME).apply() }
     }
 }

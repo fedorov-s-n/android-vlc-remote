@@ -207,16 +207,23 @@ class YoutubeVideoFragment : Fragment() {
         RezkaPlayback.clear()
         YoutubePlayback.clear()
         val titleWithQuality = if (quality.label.isNotBlank()) "${v.title} [${quality.label}]" else v.title
+        val plUrls = arguments?.getStringArrayList(ARG_PL_URLS) ?: arrayListOf()
+        val plTitles = arguments?.getStringArrayList(ARG_PL_TITLES) ?: arrayListOf()
+        val plIndex = arguments?.getInt(ARG_PL_INDEX, -1) ?: -1
         YtDownloadManager.start(
-            requireContext(), url, quality.url, audioUrl, v.durationSec,
+            requireContext(), quality.url, audioUrl, v.durationSec,
             titleWithQuality, v.uploader, arguments?.getString(ARG_PL_NAME),
-            authority, chosenSub?.url, subName
+            authority, chosenSub?.url, subName,
+            plUrls, plTitles, plIndex, quality.label
         )
         Toast.makeText(requireContext(), getString(R.string.youtube_downloading), Toast.LENGTH_SHORT).show()
     }
 
     companion object {
         private const val ARG_URL = "url"
+        private const val ARG_PL_URLS = "pl_urls"
+        private const val ARG_PL_TITLES = "pl_titles"
+        private const val ARG_PL_INDEX = "pl_index"
         private const val ARG_PL_NAME = "pl_name"
 
         fun newInstance(url: String): YoutubeVideoFragment =
@@ -224,11 +231,21 @@ class YoutubeVideoFragment : Fragment() {
                 arguments = Bundle().apply { putString(ARG_URL, url) }
             }
 
-        /** Opens a video that belongs to a playlist; [playlistName] is used as the album tag. */
-        fun newInstance(url: String, playlistName: String?): YoutubeVideoFragment =
+        /** Opens a video from a playlist: [urls]/[titles]/[index] drive next/previous, and
+         *  [playlistName] is the album tag. */
+        fun newInstance(
+            url: String,
+            urls: ArrayList<String>,
+            titles: ArrayList<String>,
+            index: Int,
+            playlistName: String?
+        ): YoutubeVideoFragment =
             YoutubeVideoFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_URL, url)
+                    putStringArrayList(ARG_PL_URLS, urls)
+                    putStringArrayList(ARG_PL_TITLES, titles)
+                    putInt(ARG_PL_INDEX, index)
                     putString(ARG_PL_NAME, playlistName)
                 }
             }

@@ -142,8 +142,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                 if (!RezkaPlayback.playPrevious(getActivity())) {
                     Toast.makeText(getActivity(), R.string.rezka_no_prev_episode, Toast.LENGTH_SHORT).show();
                 }
-            } else if (YoutubePlayback.isActive()) {
-                if (!YoutubePlayback.playPrevious(getActivity())) {
+            } else if (org.peterbaldwin.vlcremote.youtube.YtDownloadManager.hasQueue()) {
+                if (!org.peterbaldwin.vlcremote.youtube.YtDownloadManager.playPrevious(getActivity())) {
                     Toast.makeText(getActivity(), R.string.youtube_no_prev, Toast.LENGTH_SHORT).show();
                 }
             } else {
@@ -154,8 +154,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                 if (!RezkaPlayback.playNext(getActivity())) {
                     Toast.makeText(getActivity(), R.string.rezka_no_next_episode, Toast.LENGTH_SHORT).show();
                 }
-            } else if (YoutubePlayback.isActive()) {
-                if (!YoutubePlayback.playNext(getActivity())) {
+            } else if (org.peterbaldwin.vlcremote.youtube.YtDownloadManager.hasQueue()) {
+                if (!org.peterbaldwin.vlcremote.youtube.YtDownloadManager.playNext(getActivity())) {
                     Toast.makeText(getActivity(), R.string.youtube_no_next, Toast.LENGTH_SHORT).show();
                 }
             } else {
@@ -303,9 +303,9 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                 if (RezkaPlayback.isActiveSeries()) {
                     mAutorunFiredForThisEnd = true;
                     RezkaPlayback.playNext(getActivity());
-                } else if (YoutubePlayback.isActive()) {
+                } else if (org.peterbaldwin.vlcremote.youtube.YtDownloadManager.hasQueue()) {
                     mAutorunFiredForThisEnd = true;
-                    YoutubePlayback.playNext(getActivity());
+                    org.peterbaldwin.vlcremote.youtube.YtDownloadManager.playNext(getActivity());
                 }
             }
         } else {
