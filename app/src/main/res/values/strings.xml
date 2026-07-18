@@ -226,6 +226,8 @@
     <string name="youtube_quality">Quality</string>
     <string name="youtube_quality_best">Best (HD, downloads)</string>
     <string name="youtube_downloading">Preparing HD download…</string>
+    <string name="youtube_open_browser">Open in browser</string>
+    <string name="open_in_browser">Открыть в браузере</string>
     <string name="pref_youtube_download_status_title">Show download status</string>
     <string name="pref_youtube_download_status_summary">Show download progress/size on the Now Playing bar while a video downloads</string>
     <string name="youtube_audio">Audio</string>

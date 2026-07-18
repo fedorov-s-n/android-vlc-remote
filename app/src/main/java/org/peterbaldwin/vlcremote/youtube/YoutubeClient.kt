@@ -55,6 +55,9 @@ data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
 /** A selectable video quality (mp4 video-only stream; audio is added by the mux helper). */
 data class YtQuality(val label: String, val url: String, val isVideoOnly: Boolean)
 
+/** A selectable audio track (muxed with the chosen video). */
+data class YtAudio(val label: String, val url: String)
+
 /** A selectable subtitle track. */
 data class YtSub(val label: String, val url: String)
 
@@ -80,6 +83,7 @@ data class YtVideo(
     val description: String,
     val thumbnailUrl: String?,
     val qualities: List<YtQuality>,
+    val audios: List<YtAudio>,
     val audioUrl: String?,
     val durationSec: Long,
     val subtitles: List<YtSub>
@@ -155,7 +159,15 @@ object YoutubeClient {
             .distinctBy { it.resolution }
             .map { YtQuality(it.resolution ?: "?", it.content, true) }
 
-        val audioUrl = pickBestAudio(info.audioStreams)?.content
+        // Audio tracks, best first (quality, then language original>english>russian), one entry
+        // per track/language. The first is the default; the user can pick another.
+        val dur = info.duration
+        val audioStreams = info.audioStreams
+            .filter { usable(it) }
+            .sortedWith(compareByDescending<AudioStream> { audioBitrate(it, dur) }.thenBy { audioLangRank(it) })
+            .distinctBy { audioTrackKey(it) }
+        val audios = audioStreams.map { YtAudio(audioLabel(it, dur), it.content) }
+        val audioUrl = audios.firstOrNull()?.url
 
         // Prefer VTT subtitles (VLC parses WebVTT reliably); fall back to whatever exists.
         val subSource = info.subtitles.filter { it.content != null }
@@ -171,20 +183,31 @@ object YoutubeClient {
             info.uploaderUrl,
             info.description?.content ?: "",
             info.thumbnails.maxByOrNull { it.width }?.url,
-            qualities, audioUrl, info.duration, subtitles
+            qualities, audios, audioUrl, info.duration, subtitles
         )
     }
 
     // ---- Audio selection (for the download+mux mechanism) ----
+    // Audio tracks are ordered by quality (bitrate), then language original>english>russian>other,
+    // so the first one is the default; the user can still pick another.
 
-    /**
-     * Picks the audio track to mux in. Quality (bitrate) is the primary key; language is only a
-     * tie-breaker with priority original > english > russian > other.
-     */
-    private fun pickBestAudio(list: List<AudioStream>): AudioStream? =
-        list.filter { usable(it) }
-            .sortedWith(compareByDescending<AudioStream> { audioBitrate(it) }.thenBy { audioLangRank(it) })
-            .firstOrNull()
+    /** Dropdown label, e.g. "English (US) 128 kbps" / "Russian original 160 kbps". */
+    private fun audioLabel(a: AudioStream, durationSec: Long): String {
+        val kbps = audioBitrate(a, durationSec) / 1000
+        return if (kbps > 0) "${audioTrackName(a)} $kbps kbps" else audioTrackName(a)
+    }
+
+    private fun audioTrackName(a: AudioStream): String =
+        a.audioTrackName?.takeIf { it.isNotBlank() }
+            ?: a.audioLocale?.displayLanguage?.takeIf { it.isNotBlank() }
+            ?: "Audio"
+
+    /** Dedup key: one entry per audio track/language. */
+    private fun audioTrackKey(a: AudioStream): String =
+        a.audioTrackName?.takeIf { it.isNotBlank() }
+            ?: a.audioLocale?.language?.takeIf { it.isNotBlank() }
+            ?: a.audioTrackId?.takeIf { it.isNotBlank() }
+            ?: "default"
 
     /** Usable by the download+mux scheme: a directly-downloadable progressive URL with a
      *  known size (excludes DASH/OTF/HLS segmented streams that ffmpeg can't fetch as one file). */
@@ -192,8 +215,15 @@ object YoutubeClient {
         s.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP &&
             s.content != null && contentLength(s.content) > 0
 
-    private fun audioBitrate(a: AudioStream): Int =
-        a.averageBitrate.takeIf { it > 0 } ?: a.bitrate
+    private fun audioBitrate(a: AudioStream, durationSec: Long): Int {
+        val i = a.itagItem
+        val known = listOf(a.averageBitrate, a.bitrate, i?.bitrate ?: 0, i?.averageBitrate ?: 0)
+            .firstOrNull { it > 0 }
+        if (known != null) return known
+        // Fall back to the effective bitrate from file size / duration (bits per second).
+        val clen = contentLength(a.content)
+        return if (clen > 0 && durationSec > 0) (clen * 8 / durationSec).toInt() else 0
+    }
 
     private fun audioLangRank(a: AudioStream): Int {
         val name = (a.audioTrackName ?: "").lowercase()

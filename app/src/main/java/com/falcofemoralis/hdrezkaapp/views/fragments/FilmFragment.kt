@@ -259,6 +259,17 @@ class FilmFragment : Fragment(), FilmView {
         seasonLabel = currentView.findViewById(R.id.fragment_film_tv_season_label)
         episodeLabel = currentView.findViewById(R.id.fragment_film_tv_episode_label)
         currentView.findViewById<View>(R.id.fragment_film_btn_play_vlc).setOnClickListener { playInVlc() }
+        currentView.findViewById<View>(R.id.fragment_film_btn_browser).setOnClickListener { openInBrowser() }
+    }
+
+    private fun openInBrowser() {
+        val link = filmPresenter.film.filmLink
+        if (link.isNullOrEmpty()) return
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), getString(R.string.connection_error), Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** Sends the currently selected stream (voice/season/episode/quality) to the remote VLC. */

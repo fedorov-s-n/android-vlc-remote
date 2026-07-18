@@ -48,6 +48,7 @@ class YoutubeVideoFragment : Fragment() {
         audioSpinner = view.findViewById(R.id.youtube_video_audio)
         subtitleSpinner = view.findViewById(R.id.youtube_video_subtitle)
         view.findViewById<TextView>(R.id.youtube_video_play).setOnClickListener { playInVlc() }
+        view.findViewById<TextView>(R.id.youtube_video_browser).setOnClickListener { openInBrowser() }
 
         commentsAdapter = YoutubeCommentAdapter(::onExpandReplies)
         val commentsRv = view.findViewById<RecyclerView>(R.id.youtube_video_comments)
@@ -111,11 +112,10 @@ class YoutubeVideoFragment : Fragment() {
 
         v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
 
-        // Quality = mp4 video qualities (all played via download+mux). Audio is auto-selected,
-        // so its spinner is hidden. Default to 1080p or the highest available (rezka's rule).
+        // Quality = mp4 video qualities (all played via download+mux). Default to 1080p or the
+        // highest available (rezka's rule). Audio dropdown defaults to the best track.
         qualitySpinner.adapter = spinnerAdapter(v.qualities.map { it.label })
-        audioSpinner.visibility = View.GONE
-        view.findViewById<View>(R.id.youtube_video_audio_label).visibility = View.GONE
+        audioSpinner.adapter = spinnerAdapter(v.audios.map { it.label })
         val subLabels = listOf(getString(R.string.youtube_subtitle_off)) + v.subtitles.map { it.label }
         subtitleSpinner.adapter = spinnerAdapter(subLabels)
 
@@ -184,6 +184,14 @@ class YoutubeVideoFragment : Fragment() {
         }
     }
 
+    private fun openInBrowser() {
+        try {
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), getString(R.string.youtube_error), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun playInVlc() {
         val v = video ?: return
         val authority = Preferences.get(requireContext()).authority
@@ -193,7 +201,7 @@ class YoutubeVideoFragment : Fragment() {
         }
 
         val quality = v.qualities.getOrNull(qualitySpinner.selectedItemPosition)
-        val audioUrl = v.audioUrl
+        val audioUrl = v.audios.getOrNull(audioSpinner.selectedItemPosition)?.url ?: v.audioUrl
         if (quality == null || audioUrl == null) {
             Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
             return
