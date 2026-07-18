@@ -45,13 +45,13 @@ object YtDownloadManager {
     private var jobKey: String? = null
     private var authority: String? = null
     private var title: String? = null
+    private var channel: String? = null
+    private var albumName: String? = null
     private var durationSec: Long = 0
     private var subtitleUrl: String? = null
     private var subtitleName: String? = null
     private var playStarted = false
     private var fastPolls = 0
-    private var prevBytes = 0L
-    private var prevMs = 0L
     private var downloadedSec = 0L
     private var resuming = false
 
@@ -80,6 +80,17 @@ object YtDownloadManager {
     /** Seconds of video downloaded so far — for the seekbar's buffered (secondary) region. */
     @JvmStatic
     fun downloadedSec(): Long = if (isActive()) downloadedSec else 0
+
+    // Shown in Now Playing immediately at start, before the file loads (VLC then shows the file's
+    // own — identical — metadata). Non-null only for downloads we started this session.
+    @JvmStatic
+    fun infoTitle(): String? = if (isActive()) title else null
+
+    @JvmStatic
+    fun infoArtist(): String? = if (isActive()) channel else null
+
+    @JvmStatic
+    fun infoAlbum(): String? = if (isActive()) albumName else null
 
     /** True while playing from a YouTube playlist — the Now Playing next/prev + autoplay use it. */
     @JvmStatic
@@ -167,13 +178,13 @@ object YtDownloadManager {
         appContext = ctx
         this.authority = authority
         this.title = title
+        this.channel = channel
+        this.albumName = album
         this.durationSec = durationSec
         this.subtitleUrl = subtitleUrl
         this.subtitleName = subtitleName
         playStarted = false
         fastPolls = 0
-        prevBytes = 0L
-        prevMs = 0L
         downloadedSec = 0L
 
         // Stop the previous video immediately so it doesn't keep playing/showing until the new
@@ -271,8 +282,6 @@ object YtDownloadManager {
                     qualityLabel = rs.quality
                     playlistName = rs.playlist
                 }
-                prevBytes = st.bytes
-                prevMs = st.ms
                 if (st.done) {
                     downloadedSec = durationSec
                     statusText = "Downloaded • " + sizeMb(st.total) + " • " + clock(st.ms)
@@ -296,9 +305,7 @@ object YtDownloadManager {
                 var reschedule = true
                 when {
                     st.running -> {
-                        val speed = instantSpeed(st.bytes, st.ms, st.total)
-                        prevBytes = st.bytes
-                        prevMs = st.ms
+                        val speed = averageSpeed(st.bytes, st.ms, st.total)
                         fastPolls = if (speed >= RATE_MIN) fastPolls + 1 else 0
                         val dlSec = if (st.total > 0) (st.bytes.toDouble() / st.total * durationSec).toLong() else 0
                         downloadedSec = dlSec
@@ -327,13 +334,11 @@ object YtDownloadManager {
         }
     }
 
-    /** Instantaneous speed between the last two polls, in seconds-of-video per wall-second. */
-    private fun instantSpeed(bytes: Long, ms: Long, total: Long): Double {
-        if (durationSec <= 0 || total <= 0) return 0.0
-        val dMs = ms - prevMs
-        if (dMs <= 0) return 0.0
-        val dVideoSec = (bytes - prevBytes).toDouble() / total * durationSec
-        return dVideoSec / (dMs / 1000.0)
+    /** Average speed over the whole download so far, in seconds-of-video per wall-second. */
+    private fun averageSpeed(bytes: Long, ms: Long, total: Long): Double {
+        if (durationSec <= 0 || total <= 0 || ms <= 0) return 0.0
+        val videoSec = bytes.toDouble() / total * durationSec
+        return videoSec / (ms / 1000.0)
     }
 
     private fun play(path: String?) {
@@ -373,6 +378,8 @@ object YtDownloadManager {
         playStarted = false
         statusText = null
         title = null
+        channel = null
+        albumName = null
         handler.removeCallbacksAndMessages(null)
         if (id != null && h != null) {
             GlobalScope.launch(Dispatchers.IO) { MuxClient.cancel(h, p, id) }

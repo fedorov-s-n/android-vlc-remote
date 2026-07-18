@@ -79,6 +79,20 @@ public class InfoFragment extends Fragment {
     }
 
     public void onStatusChanged(Context context, Status status) {
+        // Show the YouTube video's title/channel/playlist immediately at start, before the file
+        // has loaded; once VLC reports the file's own (identical) title, fall through to it.
+        String ytTitle = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.infoTitle();
+        if (ytTitle != null && TextUtils.isEmpty(status.getTrack().getTitle())) {
+            String artist = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.infoArtist();
+            String album = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.infoAlbum();
+            setText(mArtist, artist == null ? "" : artist);
+            setText(mAlbum, album == null ? "" : album);
+            setText(mTrack, ytTitle);
+            mCurrentFileName = null;
+            mCurrentTitle = null;
+            return;
+        }
+
         String name = status.getTrack().getName();
         String title = status.getTrack().getTitle();
         if(name == null) {
