@@ -25,6 +25,7 @@ object YtDownloadManager {
     // polls whose speed (seconds of video fetched per wall-second) is >= RATE_MIN.
     private const val RATE_MIN = 1.1
     private const val RATE_STREAK = 2
+    private const val MIN_BUFFER_SEC = 2   // also require at least this many seconds downloaded
     private const val KEY_RESUME = "yt_dl_resume"
 
     /** Persisted so the playlist queue survives an app restart (matched by the playing file). */
@@ -313,7 +314,7 @@ object YtDownloadManager {
                             Locale.US, "Downloading… %s/%s • %.1fs/s",
                             hms(dlSec), hms(durationSec), speed
                         )
-                        if (!playStarted && fastPolls >= RATE_STREAK) play(st.path)
+                        if (!playStarted && fastPolls >= RATE_STREAK && dlSec >= MIN_BUFFER_SEC) play(st.path)
                     }
                     st.done -> {
                         play(st.path)
