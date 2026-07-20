@@ -134,6 +134,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
             playlist().pause();
         } else if (v == mButtonPlaylistStop) {
             playlist().stop();
+            // User stopped on purpose: don't let autorun start the next queue item.
+            mAutorunFiredForThisEnd = true;
         } else if (v == mButtonPlaylistSkipBackward) {
             // For an HDrezka series, step to the previous episode (crossing seasons); at
             // the very first episode show a toast and do nothing. Otherwise fall back to

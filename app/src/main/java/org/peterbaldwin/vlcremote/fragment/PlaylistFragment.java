@@ -327,6 +327,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
 
         mAdapter.setItems(remote.data);
         selectCurrentTrack();
+        checkMissingFiles();
 
         if (remote.error != null) {
             setEmptyText(getText(R.string.connection_error));
@@ -351,7 +352,93 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
             mCurrent = filePath;
             mCurrentTitle = title;
             reload();
+            // A second later the previous YouTube file has been deleted on the host; re-check
+            // which playlist files still exist so deleted ones get struck through.
+            mCheckHandler.removeCallbacks(mCheckMissingRunnable);
+            mCheckHandler.postDelayed(mCheckMissingRunnable, 1000);
         }
+    }
+
+    private final android.os.Handler mCheckHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable mCheckMissingRunnable = new Runnable() {
+        public void run() { checkMissingFiles(); }
+    };
+
+    /** Strikes through playlist items whose local file no longer exists on the host. */
+    private void checkMissingFiles() {
+        if (getActivity() == null || mAdapter == null) {
+            return;
+        }
+        final java.util.ArrayList<String> paths = new java.util.ArrayList<String>();
+        final java.util.ArrayList<String> uris = new java.util.ArrayList<String>();
+        for (int i = 0; i < mAdapter.getCount(); i++) {
+            PlaylistItem item = mAdapter.getItem(i);
+            String uri = item == null ? null : item.getUri();
+            String path = localPath(uri);
+            if (path != null) {
+                paths.add(path);
+                uris.add(uri);
+            }
+        }
+        if (paths.isEmpty()) {
+            mAdapter.setMissingUris(java.util.Collections.<String>emptyList());
+            return;
+        }
+        android.content.SharedPreferences prefs =
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(getActivity());
+        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
+            return;
+        }
+        String host = prefs.getString("hdrezka_sub_server_host", null);
+        if (host == null || host.isEmpty()) {
+            org.peterbaldwin.vlcremote.model.Preferences p =
+                    org.peterbaldwin.vlcremote.model.Preferences.get(getActivity());
+            String auth = p == null ? null : p.getAuthority();
+            host = auth == null ? null : org.peterbaldwin.vlcremote.model.Server.fromKey(auth).getHost();
+        }
+        if (host == null) {
+            return;
+        }
+        int port;
+        try {
+            port = Integer.parseInt(prefs.getString("hdrezka_sub_server_port", "3900"));
+        } catch (Exception e) {
+            port = 3900;
+        }
+        final String fHost = host;
+        final int fPort = port;
+        new Thread(new Runnable() {
+            public void run() {
+                final java.util.List<Boolean> ex =
+                        org.peterbaldwin.vlcremote.youtube.MuxClient.existing(fHost, fPort, paths);
+                final java.util.HashSet<String> missing = new java.util.HashSet<String>();
+                for (int i = 0; i < uris.size() && i < ex.size(); i++) {
+                    if (!ex.get(i)) {
+                        missing.add(uris.get(i));
+                    }
+                }
+                mCheckHandler.post(new Runnable() {
+                    public void run() {
+                        if (mAdapter != null) {
+                            mAdapter.setMissingUris(missing);
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private static String localPath(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        if (uri.startsWith("file://")) {
+            return android.net.Uri.parse(uri).getPath();
+        }
+        if (uri.startsWith("/")) {
+            return uri;
+        }
+        return null;
     }
     
     private void reload() {

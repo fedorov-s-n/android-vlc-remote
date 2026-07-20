@@ -65,6 +65,16 @@ object MuxClient {
         get("http://$host:$port/mux/cancel?path=" + URLEncoder.encode(key, "UTF-8"))
     }
 
+    /** Which of [paths] exist on the host (same order). On failure assumes all exist (true). */
+    @JvmStatic
+    fun existing(host: String, port: Int, paths: List<String>): List<Boolean> {
+        if (paths.isEmpty()) return emptyList()
+        val query = paths.joinToString("&") { "path=" + URLEncoder.encode(it, "UTF-8") }
+        val body = get("http://$host:$port/exists?$query") ?: return List(paths.size) { true }
+        val lines = body.trim().split("\n")
+        return paths.indices.map { lines.getOrNull(it)?.trim() == "1" }
+    }
+
     private fun get(urlStr: String): String? {
         var conn: HttpURLConnection? = null
         return try {

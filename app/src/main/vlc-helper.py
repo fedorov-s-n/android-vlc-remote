@@ -309,6 +309,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, cancel_mux(_resolve_jid(key)) + "\n")
             return
+        if parsed.path == "/exists":
+            # One line per path (in order): "1" if the file exists on the host, else "0".
+            paths = qs.get("path", [])
+            lines = ["1" if p and os.path.exists(p) else "0" for p in paths]
+            self._send(200, "\n".join(lines) + "\n")
+            return
 
         if parsed.path not in ("/", "/download"):
             self._send(404, "Not found\n")
