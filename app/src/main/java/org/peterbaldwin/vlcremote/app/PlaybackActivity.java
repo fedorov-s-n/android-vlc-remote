@@ -561,6 +561,7 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
 
     @Override
     protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
         String host = intent.getStringExtra(Intents.EXTRA_REMOTE_HOST);
         if (host != null) {
             int port = intent.getIntExtra(Intents.EXTRA_REMOTE_PORT, 8080);
@@ -715,12 +716,6 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         } else if (c == 'n') {
             mMediaServer.status().command.playback.next();
             return true;
-        } else if (c == '+') {
-            // TODO: Play faster
-            return super.onKeyDown(keyCode, event);
-        } else if (c == '-') {
-            // TODO: Play slower
-            return super.onKeyDown(keyCode, event);
         } else if (c == 'f') {
             mMediaServer.status().command.fullscreen();
             return true;
