@@ -99,8 +99,6 @@ dependencies {
     implementation "androidx.fragment:fragment-ktx:1.6.2"
     implementation "androidx.viewpager2:viewpager2:1.0.0"
     implementation "androidx.preference:preference-ktx:1.2.1"
-    implementation "androidx.leanback:leanback:1.0.0"
-    implementation "androidx.leanback:leanback-preference:1.0.0"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.3.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1"
 
