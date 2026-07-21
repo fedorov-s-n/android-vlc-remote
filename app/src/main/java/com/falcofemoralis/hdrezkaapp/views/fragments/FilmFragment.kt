@@ -763,7 +763,7 @@ class FilmFragment : Fragment(), FilmView {
                     FragmentOpener.openWithData(this, fragmentListener, film, "film")
                 }
             } else {
-                layout.findViewById<TextView>(R.id.inflate_collection_item_name).setTextColor(requireContext().getColor(R.color.gray))
+                layout.findViewById<TextView>(R.id.inflate_collection_item_name).setTextColor(ContextCompat.getColor(requireContext(), R.color.gray))
             }
             collectionLayout.addView(layout)
         }

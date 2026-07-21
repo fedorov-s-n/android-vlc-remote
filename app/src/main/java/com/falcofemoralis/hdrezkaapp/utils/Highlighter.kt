@@ -30,20 +30,20 @@ object Highlighter {
                         onFocusCallback?.let { it() }
                     }
 
-                    iv.setColorFilter(context.getColor(R.color.transparent))
-                    titleView.setTextColor(context.getColor(R.color.white))
+                    iv.setColorFilter(ContextCompat.getColor(context, R.color.transparent))
+                    titleView.setTextColor(ContextCompat.getColor(context, R.color.white))
                     for (subView in subViews) {
-                        subView?.setTextColor(context.getColor(R.color.gray))
+                        subView?.setTextColor(ContextCompat.getColor(context, R.color.gray))
                     }
 
                     val anim: Animation = AnimationUtils.loadAnimation(context, R.anim.scale_in_tv)
                     anim.fillAfter = true
                     v.startAnimation(anim)
                 } else {
-                    iv.setColorFilter(context.getColor(R.color.unselected_film))
-                    titleView.setTextColor(context.getColor(R.color.unselected_title))
+                    iv.setColorFilter(ContextCompat.getColor(context, R.color.unselected_film))
+                    titleView.setTextColor(ContextCompat.getColor(context, R.color.unselected_title))
                     for (subView in subViews) {
-                        subView?.setTextColor(context.getColor(R.color.unselected_subtitle))
+                        subView?.setTextColor(ContextCompat.getColor(context, R.color.unselected_subtitle))
                     }
 
                     val anim: Animation = AnimationUtils.loadAnimation(context, R.anim.scale_out_tv)
@@ -51,7 +51,7 @@ object Highlighter {
                     v.startAnimation(anim)
                 }
             }
-            iv.setColorFilter(context.getColor(R.color.unselected_film))
+            iv.setColorFilter(ContextCompat.getColor(context, R.color.unselected_film))
         }
     }
 
