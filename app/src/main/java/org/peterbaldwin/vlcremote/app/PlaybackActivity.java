@@ -172,6 +172,13 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
         // that sound even when the activity handles volume key events.
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
+        // Android 13+ requires runtime consent to post the playback-controls notification.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001);
+        }
+
         Preferences pref = Preferences.get(this);
         isHideDVDTab = pref.isHideDVDTabSet();
         String authority = pref.getAuthority();

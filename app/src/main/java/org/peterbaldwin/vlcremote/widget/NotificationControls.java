@@ -18,6 +18,7 @@
 package org.peterbaldwin.vlcremote.widget;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -45,6 +46,17 @@ public class NotificationControls {
     }
     
     private static final int ID = 1;
+    private static final String CHANNEL_ID = "playback";
+
+    // On API 26+ a notification with no channel is silently dropped.
+    private static void ensureChannel(Context context, NotificationManager nm) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, context.getString(R.string.app_name), NotificationManager.IMPORTANCE_LOW);
+            channel.setShowBadge(false);
+            nm.createNotificationChannel(channel);
+        }
+    }
 
     public static void showLoading(Context context) {
         show(context, null);
@@ -59,8 +71,8 @@ public class NotificationControls {
         show(context, views.getNotifiation(status, art), views.getNotifiationExpanded(status, art));
     }       
     
-    public static void show(Context context, RemoteViews normal, RemoteViews expanded) {       
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+    public static void show(Context context, RemoteViews normal, RemoteViews expanded) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID);
         
         // Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(context, PlaybackActivity.class);
@@ -73,11 +85,14 @@ public class NotificationControls {
         stackBuilder.addParentStack(PlaybackActivity.class);
         // Adds the Intent that starts the Activity to the top of the stack
         stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT
+                | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, piFlags);
         builder.setContentIntent(resultPendingIntent);
-        
+
         boolean isTransparent = Preferences.get(context).isNotificationIconTransparent();
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        ensureChannel(context, notificationManager);
         Notification n = builder.setContent(normal)
                                 .setWhen(0)
                                 .setOngoing(true)
