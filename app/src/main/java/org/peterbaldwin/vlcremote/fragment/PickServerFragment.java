@@ -231,7 +231,7 @@ public final class PickServerFragment extends PreferenceFragment implements Port
     }
 
     private WifiInfo getConnectionInfo() {
-        WifiManager manager = (WifiManager) getActivity().getSystemService(Activity.WIFI_SERVICE);
+        WifiManager manager = (WifiManager) getActivity().getApplicationContext().getSystemService(Activity.WIFI_SERVICE);
         WifiInfo info = manager.getConnectionInfo();
         if (info != null) {
             SupplicantState state = info.getSupplicantState();

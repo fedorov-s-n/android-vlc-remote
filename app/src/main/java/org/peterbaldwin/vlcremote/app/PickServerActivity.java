@@ -128,7 +128,7 @@ public final class PickServerActivity extends FragmentActivity implements Server
     }
 
     private WifiInfo getConnectionInfo() {
-        Object service = getSystemService(WIFI_SERVICE);
+        Object service = getApplicationContext().getSystemService(WIFI_SERVICE);
         WifiManager manager = (WifiManager) service;
         WifiInfo info = manager.getConnectionInfo();
         if (info != null) {
@@ -172,6 +172,7 @@ public final class PickServerActivity extends FragmentActivity implements Server
                 return true;
             case android.R.id.home:
                 finish();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
