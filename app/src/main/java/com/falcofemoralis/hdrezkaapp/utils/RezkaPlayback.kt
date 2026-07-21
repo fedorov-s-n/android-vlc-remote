@@ -157,7 +157,7 @@ object RezkaPlayback {
         val auth = authority ?: return
         val filmId = f.filmId ?: return
 
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
             try {
                 FilmModel.getStreamsByEpisodeId(v, filmId, newSeason, newEpisode)
                 withContext(Dispatchers.Main) {

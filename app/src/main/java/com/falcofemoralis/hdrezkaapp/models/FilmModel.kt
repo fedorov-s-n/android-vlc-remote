@@ -462,7 +462,7 @@ object FilmModel {
     }
 
     private fun startFilmLoad(counter: Counter, loadedFilms: Array<Film?>, filmsToLoad: ArrayList<Film>, index: Int, film: Film, callback: (ArrayList<Film>) -> Unit) {
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
             try {
                 loadedFilms[index] = getMainData(film)
 
