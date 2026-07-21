@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.peterbaldwin.client.android.vlcremote.R
@@ -89,7 +89,7 @@ class YoutubeChannelFragment : Fragment() {
     private fun load(view: View) {
         progress.visibility = View.VISIBLE
         scroll.visibility = View.GONE
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val ch = YoutubeClient.channelFull(url)
                 withContext(Dispatchers.Main) {
@@ -117,7 +117,7 @@ class YoutubeChannelFragment : Fragment() {
     private fun loadMoreVideos(view: View) {
         if (videosLoading || !videosHasMore) return
         videosLoading = true
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val page = YoutubeClient.channelMore()
                 withContext(Dispatchers.Main) {

@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.peterbaldwin.client.android.vlcremote.R
@@ -67,7 +67,7 @@ class YoutubeListFragment : Fragment() {
     private fun load() {
         isLoading = true
         progress.visibility = View.VISIBLE
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val page = YoutubeClient.playlist(url)
                 withContext(Dispatchers.Main) {
@@ -94,7 +94,7 @@ class YoutubeListFragment : Fragment() {
     private fun loadMore() {
         if (isLoading || !hasMore) return
         isLoading = true
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val page = YoutubeClient.playlistMore()
                 withContext(Dispatchers.Main) {

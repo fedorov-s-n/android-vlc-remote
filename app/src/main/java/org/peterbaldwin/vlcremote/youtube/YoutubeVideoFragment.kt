@@ -18,7 +18,7 @@ import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback
 import com.falcofemoralis.hdrezkaapp.utils.SubtitleAttacher
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.peterbaldwin.client.android.vlcremote.R
@@ -70,7 +70,7 @@ class YoutubeVideoFragment : Fragment() {
     private fun load(view: View) {
         progress.visibility = View.VISIBLE
         scroll.visibility = View.GONE
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val v = YoutubeClient.video(url)
                 withContext(Dispatchers.Main) {
@@ -133,7 +133,7 @@ class YoutubeVideoFragment : Fragment() {
 
     private fun loadComments() {
         commentsLoading = true
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val page = YoutubeClient.comments(url)
                 withContext(Dispatchers.Main) {
@@ -152,7 +152,7 @@ class YoutubeVideoFragment : Fragment() {
     private fun onExpandReplies(position: Int) {
         val comment = commentsAdapter.itemAt(position) ?: return
         val page = comment.repliesPage ?: return
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val replies = YoutubeClient.commentReplies(page)
                 withContext(Dispatchers.Main) {
@@ -168,7 +168,7 @@ class YoutubeVideoFragment : Fragment() {
     private fun loadMoreComments() {
         if (commentsLoading || !commentsHasMore) return
         commentsLoading = true
-        GlobalScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val page = YoutubeClient.commentsMore()
                 withContext(Dispatchers.Main) {
