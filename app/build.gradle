@@ -136,8 +136,4 @@ dependencies {
     // Utils
     implementation "com.jakewharton:process-phoenix:2.1.2"
 
-    // Firebase (crash reporting) - libraries only, google-services plugin not applied
-    implementation platform("com.google.firebase:firebase-bom:32.7.0")
-    implementation "com.google.firebase:firebase-crashlytics-ktx"
-    implementation "com.google.firebase:firebase-analytics-ktx"
 }

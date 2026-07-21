@@ -9,9 +9,6 @@ import com.falcofemoralis.hdrezkaapp.interfaces.IConnection
 import com.falcofemoralis.hdrezkaapp.interfaces.IConnection.ErrorType
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
 import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
-import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.firebase.crashlytics.ktx.crashlytics
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -95,24 +92,6 @@ object ExceptionHelper {
         // Record every caught exception (incl. ConnectException) with its stacktrace — this path
         // reports via view.showConnectionError, not a toast, so it wouldn't be logged otherwise.
         org.peterbaldwin.vlcremote.model.ErrorLog.log("HDrezka: " + (e.message ?: e.javaClass.simpleName), e)
-
-        if (e !is IllegalArgumentException &&
-            e !is UnknownHostException &&
-            e !is SocketTimeoutException &&
-            e !is ConnectException &&
-            e !is HttpStatusException &&
-                    e !is SocketException &&
-                    e !is SSLException &&
-            e !is IOException
-        ) {
-            try {
-                // Firebase is not wired up yet (no google-services.json); guard so a
-                // missing default app never crashes the host.
-                Firebase.crashlytics.recordException(e)
-            } catch (fe: Exception) {
-                fe.printStackTrace()
-            }
-        }
 
         e.printStackTrace()
 
