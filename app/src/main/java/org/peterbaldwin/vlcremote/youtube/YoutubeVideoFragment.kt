@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback
 import com.falcofemoralis.hdrezkaapp.utils.SubtitleAttacher
-import com.squareup.picasso.Picasso
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -110,7 +110,7 @@ class YoutubeVideoFragment : Fragment() {
         descView.text = HtmlCompat.fromHtml(v.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
         descView.movementMethod = android.text.method.LinkMovementMethod.getInstance()
 
-        v.thumbnailUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
+        v.thumbnailUrl?.let { Glide.with(this).load(it).into(view.findViewById<ImageView>(R.id.youtube_video_thumb)) }
 
         // Quality = mp4 video qualities (all played via download+mux). Default to 1080p or the
         // highest available (rezka's rule). Audio dropdown defaults to the best track.
