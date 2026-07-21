@@ -34,8 +34,8 @@
         tools:replace="android:label"
         android:logo="@drawable/icon"
         android:theme="@style/Theme"
-        android:allowBackup="true"
-        android:usesCleartextTraffic="true">
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:allowBackup="true">
         <activity
             android:name=".PlaybackActivity"
             android:finishOnTaskLaunch="true"
