@@ -37,6 +37,12 @@
     <string name="label_helper_enabled">Use playback helper (vlc-helper.py)</string>
     <string name="label_helper_host">Helper host (default: this server\'s host)</string>
     <string name="label_helper_port">Helper port (default: 3900)</string>
+    <string name="label_helper_user">Helper username (optional)</string>
+    <string name="label_helper_pass">Helper password (optional)</string>
+    <string name="helper_test">Test helper</string>
+    <string name="helper_ok">Helper connection successful</string>
+    <string name="helper_unauthorized">Helper: wrong username/password</string>
+    <string name="helper_error">Helper unreachable</string>
     <string name="button_default_value">default</string>
     <string name="wifi">Wi-Fi</string>
     <string name="sort_directories_first">Sort Directories First</string>

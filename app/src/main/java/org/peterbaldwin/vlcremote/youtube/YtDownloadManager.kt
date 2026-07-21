@@ -51,6 +51,7 @@ object YtDownloadManager {
     private var appContext: Context? = null
     private var host: String? = null
     private var port: Int = 3900
+    private var authHeader: String? = null
     private var jobKey: String? = null
     private var authority: String? = null
     private var title: String? = null
@@ -248,12 +249,13 @@ object YtDownloadManager {
         }
         host = cfg.host
         port = cfg.port
+        authHeader = cfg.authHeader
 
         statusText = "Preparing download…"
         val h = cfg.host
         val p = cfg.port
         GlobalScope.launch(Dispatchers.IO) {
-            val key = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "", durationSec)
+            val key = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "", durationSec, authHeader)
             withContext(Dispatchers.Main) {
                 if (key == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"
@@ -341,7 +343,7 @@ object YtDownloadManager {
         val p = cfg.port
         resuming = true
         GlobalScope.launch(Dispatchers.IO) {
-            val st = MuxClient.status(h, p, playingFileName)
+            val st = MuxClient.status(h, p, playingFileName, cfg.authHeader)
             withContext(Dispatchers.Main) {
                 resuming = false
                 if (isActive()) return@withContext
@@ -350,6 +352,7 @@ object YtDownloadManager {
                 this@YtDownloadManager.authority = authority
                 host = h
                 port = p
+                authHeader = cfg.authHeader
                 jobKey = playingFileName
                 durationSec = st.durationSec
                 title = null
@@ -385,7 +388,7 @@ object YtDownloadManager {
         val h = host ?: return
         val p = port
         GlobalScope.launch(Dispatchers.IO) {
-            val st = MuxClient.status(h, p, id)
+            val st = MuxClient.status(h, p, id, authHeader)
             withContext(Dispatchers.Main) {
                 if (jobKey != id) return@withContext  // cancelled or switched away
                 var reschedule = true
@@ -493,7 +496,7 @@ object YtDownloadManager {
         albumName = null
         handler.removeCallbacksAndMessages(null)
         if (id != null && h != null) {
-            GlobalScope.launch(Dispatchers.IO) { MuxClient.cancel(h, p, id) }
+            GlobalScope.launch(Dispatchers.IO) { MuxClient.cancel(h, p, id, authHeader) }
         }
     }
 

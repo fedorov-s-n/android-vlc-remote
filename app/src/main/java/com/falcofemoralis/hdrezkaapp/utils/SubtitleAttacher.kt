@@ -26,7 +26,7 @@ object SubtitleAttacher {
         // No helper (disabled / misconfigured) -> no subtitles.
         val cfg = org.peterbaldwin.vlcremote.model.HelperConfig.resolve(context, authority) ?: return
         DownloadPathClient.requestTempPath(
-            cfg.host, cfg.port, subUrl, name,
+            cfg.host, cfg.port, subUrl, name, cfg.authHeader,
             object : DownloadPathClient.Callback {
                 override fun onSuccess(tempPath: String) {
                     server.status().command.input.subtitles(tempPath)

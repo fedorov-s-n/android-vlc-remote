@@ -29,22 +29,22 @@ object MuxClient {
      *  @return the muxed file path (used as the job key), or null on failure / helper busy. */
     fun start(
         host: String, port: Int, videoUrl: String, audioUrl: String,
-        title: String, artist: String, album: String, durationSec: Long
+        title: String, artist: String, album: String, durationSec: Long, auth: String? = null
     ): String? {
         val v = URLEncoder.encode(videoUrl, "UTF-8")
         val a = URLEncoder.encode(audioUrl, "UTF-8")
         val t = URLEncoder.encode(title, "UTF-8")
         val c = URLEncoder.encode(artist, "UTF-8")
         val al = URLEncoder.encode(album, "UTF-8")
-        val body = get("http://$host:$port/mux/start?v=$v&a=$a&t=$t&c=$c&al=$al&d=$durationSec") ?: return null
+        val body = get("http://$host:$port/mux/start?v=$v&a=$a&t=$t&c=$c&al=$al&d=$durationSec", auth) ?: return null
         val path = body.trim()
         // Errors come back as "ERROR: ..." with a non-2xx code -> get() returns null for those.
         return if (path.isEmpty() || path.startsWith("ERROR")) null else path
     }
 
     /** @param key the file path or basename (mux_<id>.ts) identifying the job. */
-    fun status(host: String, port: Int, key: String): Status {
-        val body = get("http://$host:$port/mux/status?path=" + URLEncoder.encode(key, "UTF-8"))
+    fun status(host: String, port: Int, key: String, auth: String? = null): Status {
+        val body = get("http://$host:$port/mux/status?path=" + URLEncoder.encode(key, "UTF-8"), auth)
             ?: return Status("")
         val parts = body.trim().split(" ", limit = 6)
         return when (parts.firstOrNull()) {
@@ -61,21 +61,22 @@ object MuxClient {
         }
     }
 
-    fun cancel(host: String, port: Int, key: String) {
-        get("http://$host:$port/mux/cancel?path=" + URLEncoder.encode(key, "UTF-8"))
+    fun cancel(host: String, port: Int, key: String, auth: String? = null) {
+        get("http://$host:$port/mux/cancel?path=" + URLEncoder.encode(key, "UTF-8"), auth)
     }
 
     /** Which of [paths] exist on the host (same order). On failure assumes all exist (true). */
     @JvmStatic
-    fun existing(host: String, port: Int, paths: List<String>): List<Boolean> {
+    @JvmOverloads
+    fun existing(host: String, port: Int, paths: List<String>, auth: String? = null): List<Boolean> {
         if (paths.isEmpty()) return emptyList()
         val query = paths.joinToString("&") { "path=" + URLEncoder.encode(it, "UTF-8") }
-        val body = get("http://$host:$port/exists?$query") ?: return List(paths.size) { true }
+        val body = get("http://$host:$port/exists?$query", auth) ?: return List(paths.size) { true }
         val lines = body.trim().split("\n")
         return paths.indices.map { lines.getOrNull(it)?.trim() == "1" }
     }
 
-    private fun get(urlStr: String): String? {
+    private fun get(urlStr: String, auth: String? = null): String? {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
@@ -83,6 +84,7 @@ object MuxClient {
                 connectTimeout = 10_000
                 readTimeout = 20_000
                 useCaches = false
+                if (auth != null) setRequestProperty("Authorization", auth)
             }
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream

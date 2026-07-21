@@ -57,6 +57,8 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
     private android.widget.CheckBox mEditHelperEnabled;
     private EditText mEditHelperHost;
     private EditText mEditHelperPort;
+    private EditText mEditHelperUser;
+    private EditText mEditHelperPass;
     
     /**
      * Creates a new ServerInfoDialog instance for adding a new server.
@@ -154,6 +156,11 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
         mEditHelperEnabled = (android.widget.CheckBox) view.findViewById(R.id.edit_helper_enabled);
         mEditHelperHost = (EditText) view.findViewById(R.id.edit_helper_host);
         mEditHelperPort = (EditText) view.findViewById(R.id.edit_helper_port);
+        mEditHelperUser = (EditText) view.findViewById(R.id.edit_helper_user);
+        mEditHelperPass = (EditText) view.findViewById(R.id.edit_helper_pass);
+        view.findViewById(R.id.edit_helper_test).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onTestHelper(); }
+        });
         mEditHelperEnabled.setChecked(true); // default for a new server
         String currentKey = getArguments().getString("currentKey");
         // Guard against a malformed key so editing never fails to open.
@@ -169,7 +176,29 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
                     org.peterbaldwin.vlcremote.model.HelperConfig.isEnabled(getActivity(), hp));
             mEditHelperHost.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getHost(getActivity(), hp));
             mEditHelperPort.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getPort(getActivity(), hp));
+            mEditHelperUser.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getUser(getActivity(), hp));
+            mEditHelperPass.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getPass(getActivity(), hp));
         }
+    }
+
+    /** Tests reachability + credentials of this server's helper (from the current dialog input). */
+    private void onTestHelper() {
+        String host = mEditHelperHost.getText().toString().trim();
+        if (host.isEmpty()) {
+            host = mEditHostname.getText().toString().trim(); // default: this server's host
+        }
+        int port;
+        try {
+            String p = mEditHelperPort.getText().toString().trim();
+            port = p.isEmpty() ? org.peterbaldwin.vlcremote.model.HelperConfig.DEFAULT_PORT : Integer.parseInt(p);
+        } catch (NumberFormatException e) {
+            port = org.peterbaldwin.vlcremote.model.HelperConfig.DEFAULT_PORT;
+        }
+        String user = mEditHelperUser.getText().toString().trim();
+        String pass = mEditHelperPass.getText().toString();
+        String auth = (user.isEmpty() && pass.isEmpty()) ? null
+                : "Basic " + android.util.Base64.encodeToString((user + ":" + pass).getBytes(), android.util.Base64.NO_WRAP);
+        new org.peterbaldwin.vlcremote.net.HelperConnectionTest(getActivity(), host, port, auth).execute();
     }
 
     @Override
@@ -224,7 +253,9 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
                 getActivity(), hp,
                 mEditHelperEnabled.isChecked(),
                 mEditHelperHost.getText().toString(),
-                mEditHelperPort.getText().toString());
+                mEditHelperPort.getText().toString(),
+                mEditHelperUser.getText().toString(),
+                mEditHelperPass.getText().toString());
         String oldKey = getArguments().getString("currentKey");
         if(oldKey != null) {
             Server old = Server.fromKey(oldKey);

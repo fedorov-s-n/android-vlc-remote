@@ -16,9 +16,18 @@ object HelperConfig {
     private const val KEY_ENABLED = "helper_enabled#"
     private const val KEY_HOST = "helper_host#"
     private const val KEY_PORT = "helper_port#"
+    private const val KEY_USER = "helper_user#"
+    private const val KEY_PASS = "helper_pass#"
     const val DEFAULT_PORT = 3900
 
-    data class Config(val host: String, val port: Int)
+    data class Config(val host: String, val port: Int, val user: String = "", val pass: String = "") {
+        /** HTTP Basic auth header value, or null when no credentials are set. */
+        val authHeader: String?
+            get() = if (user.isNotEmpty() || pass.isNotEmpty())
+                "Basic " + android.util.Base64.encodeToString(
+                    "$user:$pass".toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
+            else null
+    }
 
     /** Stable id for a server (its host:port), so config survives nickname/response-code edits. */
     private fun idFor(serverKeyOrAuthority: String?): String? =
@@ -39,7 +48,9 @@ object HelperConfig {
             ?: return null
         val port = prefs.getString(KEY_PORT + id, null)?.trim()?.toIntOrNull() ?: DEFAULT_PORT
         if (port !in 1..65535) return null
-        return Config(host, port)
+        val user = prefs.getString(KEY_USER + id, null)?.trim() ?: ""
+        val pass = prefs.getString(KEY_PASS + id, null) ?: ""
+        return Config(host, port, user, pass)
     }
 
     @JvmStatic
@@ -59,13 +70,24 @@ object HelperConfig {
     fun getPort(context: Context, hostAndPort: String): String =
         PreferenceManager.getDefaultSharedPreferences(context).getString(KEY_PORT + hostAndPort, "") ?: ""
 
+    @JvmStatic
+    fun getUser(context: Context, hostAndPort: String): String =
+        PreferenceManager.getDefaultSharedPreferences(context).getString(KEY_USER + hostAndPort, "") ?: ""
+
+    @JvmStatic
+    fun getPass(context: Context, hostAndPort: String): String =
+        PreferenceManager.getDefaultSharedPreferences(context).getString(KEY_PASS + hostAndPort, "") ?: ""
+
     /** Persists the helper settings for one server (identified by host:port). */
     @JvmStatic
-    fun save(context: Context, hostAndPort: String, enabled: Boolean, host: String, port: String) {
+    fun save(context: Context, hostAndPort: String, enabled: Boolean, host: String, port: String,
+             user: String, pass: String) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
             .putBoolean(KEY_ENABLED + hostAndPort, enabled)
             .putString(KEY_HOST + hostAndPort, host.trim())
             .putString(KEY_PORT + hostAndPort, port.trim())
+            .putString(KEY_USER + hostAndPort, user.trim())
+            .putString(KEY_PASS + hostAndPort, pass)
             .apply()
     }
 
@@ -76,6 +98,8 @@ object HelperConfig {
             .remove(KEY_ENABLED + hostAndPort)
             .remove(KEY_HOST + hostAndPort)
             .remove(KEY_PORT + hostAndPort)
+            .remove(KEY_USER + hostAndPort)
+            .remove(KEY_PASS + hostAndPort)
             .apply()
     }
 }

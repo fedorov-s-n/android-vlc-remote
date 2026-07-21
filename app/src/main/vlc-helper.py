@@ -26,6 +26,7 @@ VLC не умеет брать по URL сам:
   GET  http://127.0.0.1:3900/mux/start?v=<enc video url>&a=<enc audio url>
 """
 
+import base64
 import hashlib
 import os
 import re
@@ -44,6 +45,24 @@ PORT = 3900
 TIMEOUT_SEC = 30
 MAX_BYTES = 200 * 1024 * 1024  # 200MB
 ALLOWED_SCHEMES = {"http", "https"}
+
+# Optional HTTP Basic auth. Set VLC_HELPER_USER / VLC_HELPER_PASS in the environment to
+# require credentials; leave unset for an open server (trusted-LAN default).
+AUTH_USER = os.environ.get("VLC_HELPER_USER", "")
+AUTH_PASS = os.environ.get("VLC_HELPER_PASS", "")
+
+
+def _authorized(handler) -> bool:
+    if not AUTH_USER and not AUTH_PASS:
+        return True
+    hdr = handler.headers.get("Authorization", "")
+    if not hdr.startswith("Basic "):
+        return False
+    try:
+        u, _, p = base64.b64decode(hdr[6:]).decode("utf-8", "replace").partition(":")
+    except Exception:
+        return False
+    return u == AUTH_USER and p == AUTH_PASS
 
 
 def safe_name(s: str) -> str:
@@ -288,9 +307,25 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _reject_unauthorized(self) -> bool:
+        if _authorized(self):
+            return False
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="vlc-helper"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return True
+
     def do_GET(self):
+        if self._reject_unauthorized():
+            return
         parsed = urllib.parse.urlparse(self.path)
         qs = urllib.parse.parse_qs(parsed.query)
+
+        # Lightweight reachability/auth check used by the app's "Test helper" button.
+        if parsed.path == "/ping":
+            self._send(200, "OK\n")
+            return
 
         # Background mux jobs.
         if parsed.path == "/mux/start":
@@ -351,6 +386,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(500, f"ERROR: {e}\n")
 
     def do_POST(self):
+        if self._reject_unauthorized():
+            return
         # Save the request body to a temp file (used for generated .mpd manifests).
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path != "/content":

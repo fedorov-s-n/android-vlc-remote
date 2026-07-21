@@ -22,6 +22,7 @@ public class DownloadPathClient {
             final int serverPort,     // 3900
             final String fileUrl,     // url который сервер скачает
             final String name,        // имя (name=...)
+            final String authHeader,  // HTTP Basic auth header value, or null
             final Callback callback
     ) {
         new AsyncTask<Void, Void, Result>() {
@@ -41,6 +42,7 @@ public class DownloadPathClient {
                     conn.setConnectTimeout(10_000);
                     conn.setReadTimeout(60_000);
                     conn.setUseCaches(false);
+                    if (authHeader != null) conn.setRequestProperty("Authorization", authHeader);
 
                     int code = conn.getResponseCode();
                     InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();

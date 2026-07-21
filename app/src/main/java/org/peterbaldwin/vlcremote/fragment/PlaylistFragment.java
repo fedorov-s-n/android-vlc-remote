@@ -397,7 +397,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
         new Thread(new Runnable() {
             public void run() {
                 final java.util.List<Boolean> ex =
-                        org.peterbaldwin.vlcremote.youtube.MuxClient.existing(fHost, fPort, paths);
+                        org.peterbaldwin.vlcremote.youtube.MuxClient.existing(fHost, fPort, paths, cfg.getAuthHeader());
                 final java.util.HashSet<String> missing = new java.util.HashSet<String>();
                 for (int i = 0; i < uris.size() && i < ex.size(); i++) {
                     if (!ex.get(i)) {
