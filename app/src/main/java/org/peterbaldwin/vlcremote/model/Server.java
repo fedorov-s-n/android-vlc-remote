@@ -185,8 +185,14 @@ public class Server {
         }
         int nicknameDelim = key.lastIndexOf(';');
         String nickname = nicknameDelim > 0 ? key.substring(nicknameDelim + 1) : "";
-        String responseStr = key.substring(responseDelim + 1, nicknameDelim);
-        int response = responseStr.isEmpty() ? DEFAULT_RESPONSE_CODE : Integer.valueOf(responseStr);
+        int responseEnd = nicknameDelim > responseDelim ? nicknameDelim : key.length();
+        String responseStr = key.substring(responseDelim + 1, responseEnd);
+        int response;
+        try {
+            response = responseStr.isEmpty() ? DEFAULT_RESPONSE_CODE : Integer.parseInt(responseStr);
+        } catch (NumberFormatException e) {
+            response = DEFAULT_RESPONSE_CODE;
+        }
         return new Server(nickname, key.substring(0, responseDelim), response);
     }
     

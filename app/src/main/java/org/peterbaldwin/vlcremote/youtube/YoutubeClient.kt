@@ -75,7 +75,8 @@ data class YtChannel(
 )
 
 /** Details of a single video. All qualities are H.264 video-only; [audioUrl] is the
- *  auto-chosen best AAC audio, muxed in by the helper. */
+ *  auto-chosen best AAC audio. With the helper it's muxed into a seekable file; without it VLC
+ *  plays the chosen video-only quality with the audio attached as an input-slave (no seeking). */
 data class YtVideo(
     val title: String,
     val uploader: String,

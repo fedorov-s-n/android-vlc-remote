@@ -153,7 +153,7 @@ class YoutubeSearchFragment : Fragment() {
                     if (!isAdded) return@withContext
                     isLoading = false
                     progress.visibility = View.GONE
-                    Toast.makeText(requireContext(), getString(R.string.youtube_error), Toast.LENGTH_LONG).show()
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.youtube_error), e)
                 }
             }
         }

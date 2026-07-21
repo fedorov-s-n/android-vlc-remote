@@ -383,29 +383,17 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
         if (paths.isEmpty()) {
             return;
         }
-        android.content.SharedPreferences prefs =
-                androidx.preference.PreferenceManager.getDefaultSharedPreferences(getActivity());
-        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
+        // Needs the helper's /exists endpoint; if it's off/misconfigured, skip (can't verify).
+        org.peterbaldwin.vlcremote.model.Preferences p =
+                org.peterbaldwin.vlcremote.model.Preferences.get(getActivity());
+        String auth = p == null ? null : p.getAuthority();
+        org.peterbaldwin.vlcremote.model.HelperConfig.Config cfg =
+                org.peterbaldwin.vlcremote.model.HelperConfig.resolve(getActivity(), auth);
+        if (cfg == null) {
             return;
         }
-        String host = prefs.getString("hdrezka_sub_server_host", null);
-        if (host == null || host.isEmpty()) {
-            org.peterbaldwin.vlcremote.model.Preferences p =
-                    org.peterbaldwin.vlcremote.model.Preferences.get(getActivity());
-            String auth = p == null ? null : p.getAuthority();
-            host = auth == null ? null : org.peterbaldwin.vlcremote.model.Server.fromKey(auth).getHost();
-        }
-        if (host == null) {
-            return;
-        }
-        int port;
-        try {
-            port = Integer.parseInt(prefs.getString("hdrezka_sub_server_port", "3900"));
-        } catch (Exception e) {
-            port = 3900;
-        }
-        final String fHost = host;
-        final int fPort = port;
+        final String fHost = cfg.getHost();
+        final int fPort = cfg.getPort();
         new Thread(new Runnable() {
             public void run() {
                 final java.util.List<Boolean> ex =

@@ -10,6 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.peterbaldwin.vlcremote.model.ErrorLog
+import org.peterbaldwin.vlcremote.model.HelperConfig
 import org.peterbaldwin.vlcremote.model.Server
 import org.peterbaldwin.vlcremote.net.MediaServer
 import java.util.Locale
@@ -62,6 +64,11 @@ object YtDownloadManager {
     @Volatile
     private var switching = false
 
+    // True while playing a combined stream directly because the helper is off/misconfigured — no
+    // download, no seeking. Keeps the manager "active" so Now Playing shows the metadata + duration.
+    @Volatile
+    private var directPlaying = false
+
     // Playlist queue so the Now Playing next/previous buttons and autoplay can step through it.
     private var queue: List<String> = emptyList()
     private var queueTitles: List<String> = emptyList()
@@ -77,7 +84,7 @@ object YtDownloadManager {
     fun statusText(): String? = statusText
 
     @JvmStatic
-    fun isActive(): Boolean = jobKey != null || statusText != null
+    fun isActive(): Boolean = jobKey != null || statusText != null || directPlaying
 
     /** Full video duration (seconds) of the active download, or 0 — so Now Playing can show the
      *  real total time immediately instead of VLC's still-growing length. */
@@ -135,7 +142,12 @@ object YtDownloadManager {
         this.queueIndex = queueIndex
         this.qualityLabel = qualityLabel
         this.playlistName = album
-        beginDownload(context, videoUrl, audioUrl, durationSec, title, channel, album, authority, subtitleUrl, subtitleName)
+        if (HelperConfig.isUsable(context, authority)) {
+            beginDownload(context, videoUrl, audioUrl, durationSec, title, channel, album, authority, subtitleUrl, subtitleName)
+        } else {
+            // No helper: play the chosen quality + audio directly (no download, no seeking).
+            beginDirect(context, videoUrl, audioUrl, durationSec, title, channel, album, authority)
+        }
     }
 
     /** Steps to the next / previous playlist entry, resolving + downloading it. */
@@ -159,7 +171,9 @@ object YtDownloadManager {
         try { MediaServer(ctx, auth).status().command.playback.stop() } catch (e: Exception) { e.printStackTrace() }
         statusText = "Preparing…"
         GlobalScope.launch(Dispatchers.IO) {
-            val v = try { YoutubeClient.video(url) } catch (e: Exception) { e.printStackTrace(); null }
+            val v = try { YoutubeClient.video(url) } catch (e: Exception) {
+                ErrorLog.log("YouTube: failed to load next/previous video", e); null
+            }
             withContext(Dispatchers.Main) {
                 if (v == null) { statusText = "Download failed"; return@withContext }
                 val q = v.qualities.firstOrNull { it.label == label }
@@ -168,7 +182,11 @@ object YtDownloadManager {
                 val audio = v.audioUrl
                 if (q == null || audio == null) { statusText = "No playable stream"; return@withContext }
                 val titleQ = if (q.label.isNotBlank()) "${v.title} [${q.label}]" else v.title
-                beginDownload(ctx, q.url, audio, v.durationSec, titleQ, v.uploader, pl, auth, null, null)
+                if (HelperConfig.isUsable(ctx, auth)) {
+                    beginDownload(ctx, q.url, audio, v.durationSec, titleQ, v.uploader, pl, auth, null, null)
+                } else {
+                    beginDirect(ctx, q.url, audio, v.durationSec, titleQ, v.uploader, pl, auth)
+                }
             }
         }
         return true
@@ -209,18 +227,17 @@ object YtDownloadManager {
             e.printStackTrace()
         }
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
-        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
+        val cfg = HelperConfig.resolve(ctx, authority)
+        if (cfg == null) {
             statusText = "Download helper disabled in settings"
             return
         }
-        host = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
-            ?: Server.fromKey(authority).host
-        port = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
+        host = cfg.host
+        port = cfg.port
 
         statusText = "Preparing download…"
-        val h = host ?: return
-        val p = port
+        val h = cfg.host
+        val p = cfg.port
         GlobalScope.launch(Dispatchers.IO) {
             val key = MuxClient.start(h, p, videoUrl, audioUrl, title ?: "", channel ?: "", album ?: "", durationSec)
             withContext(Dispatchers.Main) {
@@ -232,6 +249,46 @@ object YtDownloadManager {
                 saveResume(ctx)
                 poll()
             }
+        }
+    }
+
+    /** Helper off/misconfigured: play the chosen video quality directly in VLC with the audio
+     *  attached as an input-slave (VLC fetches both) — any quality up to YouTube's AVC, but no
+     *  download, no seeking, no subtitles. Now Playing still shows title/channel/playlist +
+     *  duration, and the playlist next/previous still step through the queue the same way. */
+    private fun beginDirect(
+        context: Context,
+        videoUrl: String,
+        audioUrl: String,
+        durationSec: Long,
+        title: String?,
+        channel: String?,
+        album: String?,
+        authority: String
+    ) {
+        cancelJob()
+        val ctx = context.applicationContext
+        appContext = ctx
+        this.authority = authority
+        this.title = title
+        this.channel = channel
+        this.albumName = album
+        this.durationSec = durationSec
+        this.subtitleUrl = null
+        this.subtitleName = null
+        playStarted = true
+        downloadedSec = 0L
+        directPlaying = true
+        switching = true
+        handler.postDelayed({ switching = false }, 4000)
+
+        try {
+            val options = ArrayList<String>()
+            if (!title.isNullOrEmpty()) options.add(":meta-title=$title")
+            options.add(":input-slave=$audioUrl")
+            MediaServer(ctx, authority).status().command.input.playWithOptions(videoUrl, options)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -264,11 +321,9 @@ object YtDownloadManager {
     fun resume(context: Context, playingFileName: String, authority: String) {
         if (isActive() || resuming) return
         val ctx = context.applicationContext
-        val prefs = PreferenceManager.getDefaultSharedPreferences(ctx)
-        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) return
-        val h = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
-            ?: Server.fromKey(authority).host
-        val p = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
+        val cfg = HelperConfig.resolve(ctx, authority) ?: return
+        val h = cfg.host
+        val p = cfg.port
         resuming = true
         GlobalScope.launch(Dispatchers.IO) {
             val st = MuxClient.status(h, p, playingFileName)
@@ -394,6 +449,7 @@ object YtDownloadManager {
         val p = port
         jobKey = null
         playStarted = false
+        directPlaying = false
         statusText = null
         title = null
         channel = null

@@ -34,6 +34,9 @@
     <string name="label_port">Port (default: 8080)</string>
     <string name="label_user">User (default: none)</string>
     <string name="label_password">Password (default: none)</string>
+    <string name="label_helper_enabled">Use playback helper (vlc-helper.py)</string>
+    <string name="label_helper_host">Helper host (default: this server\'s host)</string>
+    <string name="label_helper_port">Helper port (default: 3900)</string>
     <string name="button_default_value">default</string>
     <string name="wifi">Wi-Fi</string>
     <string name="sort_directories_first">Sort Directories First</string>
@@ -201,8 +204,9 @@
     <string name="pref_hdrezka_sub_server_host_summary">Helper server host. Leave empty to use the VLC server\'s address</string>
     <string name="pref_hdrezka_sub_server_port_title">Subtitle server port</string>
     <string name="pref_hdrezka_sub_server_port_summary">Helper server port (default 3900)</string>
-    <string name="pref_helper_enabled_title">Playback helper (vlc-helper.py)</string>
-    <string name="pref_helper_enabled_summary">Run vlc-helper.py on the VLC machine. Required for high-quality (DASH) YouTube playback and subtitles. Shared with the rezka tab.</string>
+    <string name="pref_helper_screen_title">Playback helper</string>
+    <string name="pref_helper_enabled_title">Use playback helper (vlc-helper.py)</string>
+    <string name="pref_helper_enabled_summary">Run vlc-helper.py on the VLC machine. Needed for subtitles and for seekable YouTube playback. When off or misconfigured: rezka/YouTube play without subtitles and YouTube plays the direct stream without seeking.</string>
     <string name="pref_helper_host_title">Helper address</string>
     <string name="pref_helper_host_summary">Host running vlc-helper.py. Leave empty to use the VLC server\'s address</string>
     <string name="pref_helper_port_title">Helper port</string>
@@ -226,6 +230,11 @@
     <string name="youtube_quality">Quality</string>
     <string name="youtube_quality_best">Best (HD, downloads)</string>
     <string name="youtube_downloading">Preparing HD download…</string>
+    <string name="youtube_playing_no_seek">Helper off — playing directly (no seeking)</string>
+    <string name="pref_error_log_title">Error log</string>
+    <string name="pref_error_log_summary">Errors shown to you this session, with stacktraces (cleared on restart)</string>
+    <string name="error_log_empty">No errors recorded this session</string>
+    <string name="error_log_clear">Clear</string>
     <string name="youtube_open_browser">Open in browser</string>
     <string name="open_in_browser">Открыть в браузере</string>
     <string name="pref_youtube_download_status_title">Show download status</string>
@@ -236,7 +245,7 @@
     <string name="youtube_history">History</string>
     <string name="youtube_history_cleared">History cleared</string>
     <string name="pref_youtube_history_size_title">History size</string>
-    <string name="pref_youtube_history_size_summary">Number of recently opened items to keep (default 15)</string>
+    <string name="pref_youtube_history_size_summary">Number of recently opened items to keep (default 100)</string>
     <string name="pref_youtube_clear_history_title">Clear history</string>
     <string name="pref_youtube_clear_history_summary">Remove all recently opened items</string>
     <string name="youtube_sort_relevance">Relevance</string>

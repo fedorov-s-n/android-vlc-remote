@@ -23,15 +23,10 @@ object SubtitleAttacher {
     /** @param name temp file name hint for the helper (extension matters, e.g. "English.vtt"). */
     @JvmStatic
     fun attach(context: Context, server: MediaServer, authority: String, subUrl: String, name: String) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        if (!prefs.getBoolean("hdrezka_sub_server_enabled", true)) {
-            return
-        }
-        val host = prefs.getString("hdrezka_sub_server_host", null)?.takeIf { it.isNotBlank() }
-            ?: Server.fromKey(authority).host
-        val port = prefs.getString("hdrezka_sub_server_port", null)?.toIntOrNull() ?: 3900
+        // No helper (disabled / misconfigured) -> no subtitles.
+        val cfg = org.peterbaldwin.vlcremote.model.HelperConfig.resolve(context, authority) ?: return
         DownloadPathClient.requestTempPath(
-            host, port, subUrl, name,
+            cfg.host, cfg.port, subUrl, name,
             object : DownloadPathClient.Callback {
                 override fun onSuccess(tempPath: String) {
                     server.status().command.input.subtitles(tempPath)
@@ -41,7 +36,9 @@ object SubtitleAttacher {
                 }
 
                 override fun onError(e: Exception, serverBody: String?) {
-                    Toast.makeText(context, context.getString(R.string.vlc_subtitle_failed), Toast.LENGTH_LONG).show()
+                    val msg = context.getString(R.string.vlc_subtitle_failed) +
+                        (serverBody?.let { "\n$it" } ?: "")
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, msg, e)
                 }
             }
         )

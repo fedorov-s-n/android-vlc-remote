@@ -311,6 +311,9 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="org.peterbaldwin.vlcremote.app.PlaybackActivity" />
         </activity>
+        <activity
+            android:name="org.peterbaldwin.vlcremote.app.ErrorLogActivity"
+            android:label="@string/pref_error_log_title" />
 
         <receiver android:name=".MediaAppWidgetProvider" android:exported="false" >
             <intent-filter>

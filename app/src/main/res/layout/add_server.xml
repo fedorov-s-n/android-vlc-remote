@@ -46,6 +46,28 @@
             android:hint="@string/label_password"
             android:singleLine="true"
             android:visibility="visible" />
+
+        <CheckBox
+            android:id="@+id/edit_helper_enabled"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dip"
+            android:text="@string/label_helper_enabled" />
+
+        <EditText
+            android:id="@+id/edit_helper_host"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_helper_host"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/edit_helper_port"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_helper_port"
+            android:inputType="number"
+            android:singleLine="true" />
     </LinearLayout>
 
 </ScrollView>

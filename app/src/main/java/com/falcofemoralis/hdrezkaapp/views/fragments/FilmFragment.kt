@@ -123,7 +123,7 @@ class FilmFragment : Fragment(), FilmView {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         if (SettingsData.deviceType != DeviceType.TV && context?.packageManager != null && context?.packageManager?.hasSystemFeature(PackageManager.FEATURE_WEBVIEW) == false) {
-            Toast.makeText(requireContext(), getString(R.string.no_webview_installed), Toast.LENGTH_LONG).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.no_webview_installed), null)
             isWebviewInstalled = false
             return inflater.inflate(R.layout.empty_layout, container, false)
         }
@@ -231,7 +231,7 @@ class FilmFragment : Fragment(), FilmView {
                 try {
                     startActivity(linkIntent)
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), getString(R.string.no_yt_player), Toast.LENGTH_LONG).show()
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.no_yt_player), e)
                 }
             }
             Highlighter.highlightText(trailerBtn, requireContext())
@@ -242,9 +242,9 @@ class FilmFragment : Fragment(), FilmView {
 
     override fun showMsg(msgType: IConnection.ErrorType) {
         if (msgType == IConnection.ErrorType.PARSING_ERROR) {
-            Toast.makeText(requireContext(), getString(R.string.server_error_503), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.server_error_503), null)
         } else if (msgType == IConnection.ErrorType.EMPTY) {
-            Toast.makeText(requireContext(), getString(R.string.blocked_in_region), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.blocked_in_region), null)
         }
     }
 
@@ -268,7 +268,7 @@ class FilmFragment : Fragment(), FilmView {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), getString(R.string.connection_error), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.connection_error), e)
         }
     }
 
@@ -277,13 +277,13 @@ class FilmFragment : Fragment(), FilmView {
         val voice = selCurrentVoice
         val stream = voice?.streams?.getOrNull(qualitySpinner.selectedItemPosition)
         if (voice == null || stream == null) {
-            Toast.makeText(requireContext(), getString(R.string.vlc_no_stream), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.vlc_no_stream), null)
             return
         }
 
         val authority = org.peterbaldwin.vlcremote.model.Preferences.get(requireContext()).authority
         if (authority == null) {
-            Toast.makeText(requireContext(), getString(R.string.vlc_no_server), Toast.LENGTH_LONG).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.vlc_no_server), null)
             return
         }
 

@@ -51,7 +51,7 @@ class FilmsListGridFragment : VerticalGridSupportFragment(), OnItemViewSelectedL
         if (callView != null) {
             callView?.onFilmsListCreated()
         } else {
-            Toast.makeText(requireContext(), getString(R.string.error_occured), Toast.LENGTH_LONG).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.error_occured), null)
         }
     }
 

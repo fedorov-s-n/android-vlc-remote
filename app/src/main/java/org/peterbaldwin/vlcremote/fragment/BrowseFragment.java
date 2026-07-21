@@ -283,7 +283,7 @@ public class BrowseFragment extends MediaListFragment implements
                 case R.id.browse_context_play:
                     List<String> dirs = new ArrayList<String>(mAdapter.getRealPaths(file));
                     if(dirs.isEmpty()) {
-                        Toast.makeText(getActivity(), "Error: unable to find real path", Toast.LENGTH_SHORT).show();
+                        org.peterbaldwin.vlcremote.model.ErrorLog.toast(getActivity(), "Error: unable to find real path", null);
                         return true;
                     }
                     com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback.clear();
@@ -367,7 +367,7 @@ public class BrowseFragment extends MediaListFragment implements
                     @Override
                     public void onClick(View v) {
                         if(e.getText().toString().isEmpty()) {
-                            Toast.makeText(getActivity(), "Library name cannot be empty", Toast.LENGTH_SHORT).show();
+                            org.peterbaldwin.vlcremote.model.ErrorLog.toast(getActivity(), "Library name cannot be empty", null);
                         } else if(libraries.contains(e.getText().toString())) {
                             Toast.makeText(getActivity(), "Library name already exists", Toast.LENGTH_SHORT).show();
                         } else {

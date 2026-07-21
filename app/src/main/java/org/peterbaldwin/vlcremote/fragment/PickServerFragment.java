@@ -113,6 +113,8 @@ public final class PickServerFragment extends PreferenceFragment implements Port
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Bump the stale old YouTube-history default (15) to the new one before the field binds.
+        org.peterbaldwin.vlcremote.youtube.YoutubeHistory.migrateDefaults(getActivity());
         addPreferencesFromResource(R.xml.server_settings);
         
         PreferenceScreen preferenceScreen = getPreferenceScreen();
@@ -334,6 +336,10 @@ public final class PickServerFragment extends PreferenceFragment implements Port
         if("youtube_clear_history".equals(preference.getKey())) {
             org.peterbaldwin.vlcremote.youtube.YoutubeHistory.clear(getActivity());
             android.widget.Toast.makeText(getActivity(), R.string.youtube_history_cleared, android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        if("error_log".equals(preference.getKey())) {
+            startActivity(new Intent(getActivity(), org.peterbaldwin.vlcremote.app.ErrorLogActivity.class));
             return true;
         }
         if(isHandledByChangeListener(preference.getKey())) {

@@ -54,6 +54,9 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
     private EditText mEditPort;
     private EditText mEditUser;
     private EditText mEditPassword;
+    private android.widget.CheckBox mEditHelperEnabled;
+    private EditText mEditHelperHost;
+    private EditText mEditHelperPort;
     
     /**
      * Creates a new ServerInfoDialog instance for adding a new server.
@@ -148,13 +151,24 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
         mEditPort = (EditText) view.findViewById(R.id.edit_port);
         mEditUser = (EditText) view.findViewById(R.id.edit_user);
         mEditPassword = (EditText) view.findViewById(R.id.edit_password);
-        if(getArguments().getString("currentKey") != null) {
-            Server server = Server.fromKey(getArguments().getString("currentKey"));
+        mEditHelperEnabled = (android.widget.CheckBox) view.findViewById(R.id.edit_helper_enabled);
+        mEditHelperHost = (EditText) view.findViewById(R.id.edit_helper_host);
+        mEditHelperPort = (EditText) view.findViewById(R.id.edit_helper_port);
+        mEditHelperEnabled.setChecked(true); // default for a new server
+        String currentKey = getArguments().getString("currentKey");
+        // Guard against a malformed key so editing never fails to open.
+        Server server = currentKey != null ? Server.fromKey(currentKey) : null;
+        if(server != null) {
             mEditNickname.setText(server.getNickname());
             mEditHostname.setText(server.getHost());
             mEditPort.setText(String.valueOf(server.getPort()));
             mEditUser.setText(server.getUser());
             mEditPassword.setText(server.getPassword());
+            String hp = server.getHostAndPort();
+            mEditHelperEnabled.setChecked(
+                    org.peterbaldwin.vlcremote.model.HelperConfig.isEnabled(getActivity(), hp));
+            mEditHelperHost.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getHost(getActivity(), hp));
+            mEditHelperPort.setText(org.peterbaldwin.vlcremote.model.HelperConfig.getPort(getActivity(), hp));
         }
     }
 
@@ -186,18 +200,38 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
             onTestServer(createServerFromInput());
             return;
         }
+        Server server = createServerFromInput();
+        // Save the per-server helper settings (even if only they changed and the server key didn't).
+        persistHelperConfig(server);
         switch(dialogType) {
             case ADD_TYPE:
-                mListener.onAddServer(createServerFromInput());
+                mListener.onAddServer(server);
                 break;
             case EDIT_TYPE:
-                Server server = createServerFromInput();
                 if(!getArguments().getString("currentKey").equals(server.toKey())) {
                     mListener.onEditServer(server, getArguments().getString("currentKey"));
                 }
                 break;
         }
         dismiss();
+    }
+
+    /** Persists this server's helper settings (keyed by host:port); drops the old server's copy
+     *  if editing changed the host/port. */
+    private void persistHelperConfig(Server server) {
+        String hp = server.getHostAndPort();
+        org.peterbaldwin.vlcremote.model.HelperConfig.save(
+                getActivity(), hp,
+                mEditHelperEnabled.isChecked(),
+                mEditHelperHost.getText().toString(),
+                mEditHelperPort.getText().toString());
+        String oldKey = getArguments().getString("currentKey");
+        if(oldKey != null) {
+            Server old = Server.fromKey(oldKey);
+            if(old != null && !old.getHostAndPort().equals(hp)) {
+                org.peterbaldwin.vlcremote.model.HelperConfig.clear(getActivity(), old.getHostAndPort());
+            }
+        }
     }
     
     private int getPort() {
@@ -222,17 +256,17 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
             try {
                 Integer.valueOf(mEditPort.getText().toString());
             } catch(NumberFormatException ex) {
-                Toast.makeText(getActivity(), R.string.validate_port, Toast.LENGTH_SHORT).show();
+                org.peterbaldwin.vlcremote.model.ErrorLog.toast(getActivity(), getString(R.string.validate_port), null);
                 return false;
             }
         }
         if(mEditHostname.getText().toString().isEmpty()) {
-            Toast.makeText(getActivity(), R.string.validate_host, Toast.LENGTH_SHORT).show();
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(getActivity(), getString(R.string.validate_host), null);
             return false;
         }
         if(requiresAuthentication) {
             if(mEditUser.getText().toString().isEmpty() && mEditPassword.getText().toString().isEmpty()) {
-                Toast.makeText(getActivity(), R.string.validate_auth, Toast.LENGTH_SHORT).show();
+                org.peterbaldwin.vlcremote.model.ErrorLog.toast(getActivity(), getString(R.string.validate_auth), null);
                 return false;
             }
         }

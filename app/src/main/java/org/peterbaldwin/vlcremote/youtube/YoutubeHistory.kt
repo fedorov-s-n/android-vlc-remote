@@ -10,8 +10,22 @@ import com.google.gson.Gson
  */
 object YoutubeHistory {
     const val KEY_SIZE = "youtube_history_size"
-    const val DEFAULT_SIZE = 15
+    const val DEFAULT_SIZE = 100
     private const val KEY_RECENT = "youtube_hist_recent"
+    private const val KEY_MIGRATED = "youtube_history_size_migrated_v1"
+
+    /** One-time bump: the framework persisted the old default (15) when settings were opened, so a
+     *  new defaultValue can't take effect. Replace that stale old default with the new one, once. */
+    @JvmStatic
+    fun migrateDefaults(context: Context) {
+        val p = prefs(context)
+        if (p.getBoolean(KEY_MIGRATED, false)) return
+        val edit = p.edit()
+        if (p.getString(KEY_SIZE, null) == "15") {
+            edit.putString(KEY_SIZE, DEFAULT_SIZE.toString())
+        }
+        edit.putBoolean(KEY_MIGRATED, true).apply()
+    }
 
     private data class Entry(
         val kind: String,
@@ -24,8 +38,10 @@ object YoutubeHistory {
 
     private fun prefs(context: Context) = PreferenceManager.getDefaultSharedPreferences(context)
 
-    private fun maxRecent(context: Context): Int =
-        prefs(context).getString(KEY_SIZE, null)?.toIntOrNull()?.coerceAtLeast(1) ?: DEFAULT_SIZE
+    private fun maxRecent(context: Context): Int {
+        migrateDefaults(context)
+        return prefs(context).getString(KEY_SIZE, null)?.toIntOrNull()?.coerceAtLeast(1) ?: DEFAULT_SIZE
+    }
 
     private fun entries(context: Context): List<Entry> {
         val json = prefs(context).getString(KEY_RECENT, null) ?: return emptyList()

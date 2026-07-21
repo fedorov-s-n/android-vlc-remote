@@ -79,7 +79,7 @@ public class ServerConnectionTest extends AsyncTask<Server, Void, Integer> {
                 Toast.makeText(context, R.string.server_ok, Toast.LENGTH_SHORT).show();
                 break;
             default:
-                Toast.makeText(context, R.string.server_error, Toast.LENGTH_SHORT).show();
+                org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, context.getString(R.string.server_error), null);
         }
     }
     

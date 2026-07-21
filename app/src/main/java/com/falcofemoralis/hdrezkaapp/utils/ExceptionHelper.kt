@@ -57,9 +57,9 @@ object ExceptionHelper {
                         context.getString(R.string.url_error_malformed)
 
                     }
-                    Toast.makeText(context, "${context.getString(textId)}: $urlErrorString ${context.getString(R.string.your_url)} ${SettingsData.provider}", Toast.LENGTH_LONG).show()
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, "${context.getString(textId)}: $urlErrorString ${context.getString(R.string.your_url)} ${SettingsData.provider}", null)
                 } else if (type != ErrorType.PROVIDER_TIMEOUT) {
-                    Toast.makeText(context, context.getString(textId) + ": " + error, Toast.LENGTH_SHORT).show()
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, context.getString(textId) + ": " + error, null)
                 }
             }
         }
@@ -92,6 +92,9 @@ object ExceptionHelper {
     }
 
     fun catchException(e: Exception, view: IConnection) {
+        // Record every caught exception (incl. ConnectException) with its stacktrace — this path
+        // reports via view.showConnectionError, not a toast, so it wouldn't be logged otherwise.
+        org.peterbaldwin.vlcremote.model.ErrorLog.log("HDrezka: " + (e.message ?: e.javaClass.simpleName), e)
 
         if (e !is IllegalArgumentException &&
             e !is UnknownHostException &&

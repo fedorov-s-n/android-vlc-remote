@@ -86,7 +86,7 @@ class YoutubeVideoFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     progress.visibility = View.GONE
-                    Toast.makeText(requireContext(), getString(R.string.youtube_error), Toast.LENGTH_LONG).show()
+                    org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.youtube_error), e)
                 }
             }
         }
@@ -188,7 +188,7 @@ class YoutubeVideoFragment : Fragment() {
         try {
             startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), getString(R.string.youtube_error), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.youtube_error), e)
         }
     }
 
@@ -196,14 +196,14 @@ class YoutubeVideoFragment : Fragment() {
         val v = video ?: return
         val authority = Preferences.get(requireContext()).authority
         if (authority == null) {
-            Toast.makeText(requireContext(), getString(R.string.youtube_no_server), Toast.LENGTH_LONG).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.youtube_no_server), null)
             return
         }
 
         val quality = v.qualities.getOrNull(qualitySpinner.selectedItemPosition)
         val audioUrl = v.audios.getOrNull(audioSpinner.selectedItemPosition)?.url ?: v.audioUrl
         if (quality == null || audioUrl == null) {
-            Toast.makeText(requireContext(), getString(R.string.youtube_no_stream), Toast.LENGTH_SHORT).show()
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.youtube_no_stream), null)
             return
         }
 
@@ -211,7 +211,9 @@ class YoutubeVideoFragment : Fragment() {
         val chosenSub = if (subPos > 0) v.subtitles.getOrNull(subPos - 1) else null
         val subName = chosenSub?.let { it.label.replace(Regex("[^A-Za-z0-9]"), "_") + ".vtt" }
 
-        // All qualities play through the host download+mux mechanism.
+        // With the helper: download+mux the chosen quality + audio into a seekable file. Without it:
+        // VLC plays the same chosen quality with the audio attached as an input-slave (no seeking).
+        val helperOn = org.peterbaldwin.vlcremote.model.HelperConfig.isUsable(requireContext(), authority)
         RezkaPlayback.clear()
         YoutubePlayback.clear()
         val titleWithQuality = if (quality.label.isNotBlank()) "${v.title} [${quality.label}]" else v.title
@@ -224,7 +226,8 @@ class YoutubeVideoFragment : Fragment() {
             authority, chosenSub?.url, subName,
             plUrls, plTitles, plIndex, quality.label
         )
-        Toast.makeText(requireContext(), getString(R.string.youtube_downloading), Toast.LENGTH_SHORT).show()
+        val msg = if (helperOn) R.string.youtube_downloading else R.string.youtube_playing_no_seek
+        Toast.makeText(requireContext(), getString(msg), Toast.LENGTH_SHORT).show()
     }
 
     companion object {
