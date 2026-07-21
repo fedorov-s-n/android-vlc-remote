@@ -12,7 +12,6 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.preference.PreferenceManager
 import com.falcofemoralis.hdrezkaapp.constants.DeviceType
 import com.falcofemoralis.hdrezkaapp.constants.UpdateItem
-import com.falcofemoralis.hdrezkaapp.controllers.SocketFactory
 import com.falcofemoralis.hdrezkaapp.interfaces.HdrezkaHost
 import com.falcofemoralis.hdrezkaapp.interfaces.OnFragmentInteractionListener.Action
 import com.falcofemoralis.hdrezkaapp.objects.SettingsData
@@ -21,7 +20,6 @@ import com.falcofemoralis.hdrezkaapp.utils.WebViewHttp
 import com.falcofemoralis.hdrezkaapp.views.fragments.SearchFragment
 import com.jakewharton.processphoenix.ProcessPhoenix
 import org.peterbaldwin.client.android.vlcremote.R
-import javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory
 
 /**
  * Hosts the native hdrezka experience inside a single tab of the VLC remote.
@@ -79,11 +77,6 @@ class RezkaFragment : Fragment(), HdrezkaHost {
             ?.takeIf { it.isNotBlank() } ?: DEFAULT_PROVIDER
         SettingsData.setProvider(provider, requireContext(), true)
 
-        try {
-            setDefaultSSLSocketFactory(SocketFactory())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
         SettingsData.init(requireContext().applicationContext)
         UserData.init(requireContext().applicationContext)
 
