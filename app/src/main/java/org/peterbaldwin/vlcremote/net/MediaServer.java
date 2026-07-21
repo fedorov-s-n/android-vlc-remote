@@ -137,7 +137,14 @@ public final class MediaServer {
         }
 
         protected final PendingIntent pending(Intent intent) {
-            return PendingIntent.getService(mContext, 0, intent, 0);
+            return PendingIntent.getService(mContext, 0, intent, pendingIntentFlags());
+        }
+
+        // API 31+ requires an explicit mutability flag or PendingIntent.get* throws
+        // IllegalArgumentException; FLAG_IMMUTABLE exists from API 23 (minSdk is 21).
+        private static int pendingIntentFlags() {
+            return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M
+                    ? PendingIntent.FLAG_IMMUTABLE : 0;
         }
 
         protected final void start(Intent intent) {
@@ -148,8 +155,7 @@ public final class MediaServer {
                 AlarmManager manager = (AlarmManager) service;
                 long triggerAtTime = SystemClock.elapsedRealtime() + mDelay;
                 int requestCode = (int) triggerAtTime;
-                int flags = 0;
-                PendingIntent op = PendingIntent.getService(mContext, requestCode, intent, flags);
+                PendingIntent op = PendingIntent.getService(mContext, requestCode, intent, pendingIntentFlags());
                 manager.set(AlarmManager.ELAPSED_REALTIME, triggerAtTime, op);
             }
         }
