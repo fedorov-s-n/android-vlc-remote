@@ -242,6 +242,10 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                     .getDefaultSharedPreferences(getActivity())
                     .getBoolean("youtube_download_status", true);
             String dl = showDl ? org.peterbaldwin.vlcremote.youtube.YtDownloadManager.statusText() : null;
+            // Local-file upload progress (Open-with-helper) shares the same Now Playing indicator.
+            if (dl == null) {
+                dl = org.peterbaldwin.vlcremote.youtube.OpenFileManager.statusText();
+            }
             if (dl == null) {
                 mDownloadStatus.setVisibility(View.GONE);
             } else {

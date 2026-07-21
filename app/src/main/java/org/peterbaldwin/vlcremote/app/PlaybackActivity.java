@@ -576,6 +576,11 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
             changeServer(authority);
         }
 
+        // A local video/audio file shared from another app: upload it to the helper and play it.
+        if (maybeOpenLocalMedia(intent)) {
+            return;
+        }
+
         String action = intent.getAction();
         if (Intent.ACTION_VIEW.equals(action) || Intents.ACTION_REMOTE_VIEW.equals(action)
                 || Intents.ACTION_VIEW.equals(action)) {
@@ -587,6 +592,53 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
             String input = intent.getStringExtra(SearchManager.QUERY);
             changeInput(input);
         }
+    }
+
+    /**
+     * If the intent hands us a local (content://, file://) video/audio file, upload it to the
+     * current server's helper and play it there. Returns true if the intent was consumed. Only
+     * media files trigger this — other file types fall through to normal handling.
+     */
+    private boolean maybeOpenLocalMedia(Intent intent) {
+        String action = intent.getAction();
+        Uri uri;
+        if (Intent.ACTION_SEND.equals(action)) {
+            uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        } else if (Intent.ACTION_VIEW.equals(action)) {
+            uri = intent.getData();
+        } else {
+            return false;
+        }
+        if (uri == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        if (!"content".equals(scheme) && !"file".equals(scheme)) {
+            return false;
+        }
+        String mime = intent.getType();
+        if (mime == null) {
+            try {
+                mime = getContentResolver().getType(uri);
+            } catch (Exception e) {
+                mime = null;
+            }
+        }
+        if (mime == null || !(mime.startsWith("video/") || mime.startsWith("audio/"))) {
+            return false;
+        }
+        Preferences prefs = Preferences.get(this);
+        String authority = prefs == null ? null : prefs.getAuthority();
+        if (authority == null) {
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(this, getString(R.string.helper_no_server), null);
+            return true;
+        }
+        if (!org.peterbaldwin.vlcremote.model.HelperConfig.isUsable(this, authority)) {
+            org.peterbaldwin.vlcremote.model.ErrorLog.toast(this, getString(R.string.helper_needed_for_file), null);
+            return true;
+        }
+        org.peterbaldwin.vlcremote.youtube.OpenFileManager.open(this, uri, authority);
+        return true;
     }
 
     @Override

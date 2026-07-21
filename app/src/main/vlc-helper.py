@@ -43,7 +43,8 @@ HOST = "0.0.0.0"
 PORT = 3900
 
 TIMEOUT_SEC = 30
-MAX_BYTES = 200 * 1024 * 1024  # 200MB
+MAX_BYTES = 200 * 1024 * 1024  # 200MB (subtitle/manifest downloads)
+MAX_UPLOAD = 12 * 1024 * 1024 * 1024  # 12GB cap for streamed media uploads (/upload)
 ALLOWED_SCHEMES = {"http", "https"}
 
 # Optional HTTP Basic auth. Set VLC_HELPER_USER / VLC_HELPER_PASS in the environment to
@@ -264,7 +265,7 @@ def _cleanup_old_files():
     except OSError:
         return
     for name in names:
-        if not (name.startswith("dl_") or name.startswith("mux_")):
+        if not (name.startswith("dl_") or name.startswith("mux_") or name.startswith("up_")):
             continue
         p = os.path.join(tmp, name)
         try:
@@ -388,8 +389,40 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self._reject_unauthorized():
             return
-        # Save the request body to a temp file (used for generated .mpd manifests).
         parsed = urllib.parse.urlparse(self.path)
+
+        # Stream a (possibly large) media file from the app to a temp file on the host, so it can
+        # be played on VLC. Written in chunks — never fully buffered in memory.
+        if parsed.path == "/upload":
+            name = urllib.parse.parse_qs(parsed.query).get("name", [None])[0]
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length <= 0 or length > MAX_UPLOAD:
+                self._send(400, "Bad Content-Length\n")
+                return
+            filename = safe_name(name) if name else "upload"
+            fd, temp_path = tempfile.mkstemp(prefix="up_", suffix="_" + filename)
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    remaining = length
+                    while remaining > 0:
+                        chunk = self.rfile.read(min(1024 * 1024, remaining))
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        remaining -= len(chunk)
+                self._send(200, temp_path + "\n")
+            except Exception as e:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+                self._send(500, "ERROR: %s\n" % e)
+            return
+
+        # Save the request body to a temp file (used for generated .mpd manifests).
         if parsed.path != "/content":
             self._send(404, "Not found\n")
             return

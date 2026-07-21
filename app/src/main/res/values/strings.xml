@@ -43,6 +43,8 @@
     <string name="helper_ok">Helper connection successful</string>
     <string name="helper_unauthorized">Helper: wrong username/password</string>
     <string name="helper_error">Helper unreachable</string>
+    <string name="helper_no_server">Select a VLC server first</string>
+    <string name="helper_needed_for_file">Enable the playback helper for this server to open files</string>
     <string name="button_default_value">default</string>
     <string name="wifi">Wi-Fi</string>
     <string name="sort_directories_first">Sort Directories First</string>
