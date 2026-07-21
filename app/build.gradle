@@ -13,8 +13,10 @@ android {
         applicationId "org.peterbaldwin.client.android.vlcremote"
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        // Match the historical manifest version (66 / 0.7.5) so a release installs as an
+        // update, not a downgrade. defaultConfig here overrides the value in AndroidManifest.
+        versionCode 66
+        versionName "0.7.5"
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
