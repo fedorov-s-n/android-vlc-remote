@@ -111,6 +111,12 @@ class WebRequest(private val url: String) {
         if (result.status !in 200..299) {
             throw HttpStatusException("HTTP error fetching URL", result.status, url)
         }
+        // Cloudflare sometimes serves an HTTP 200 JS-challenge interstitial instead of the real
+        // page (warmup not cleared yet); surface it as a retryable block rather than letting the
+        // caller parse it as "no results". These markers appear only on challenge pages.
+        if (isCloudflareChallenge(result.body)) {
+            throw HttpStatusException("Cloudflare challenge (not cleared)", 503, url)
+        }
 
         val setCookies = LinkedHashMap<String, String>()
         try {
@@ -123,4 +129,9 @@ class WebRequest(private val url: String) {
         }
         return WebResponse(url, result.body, setCookies)
     }
+
+    private fun isCloudflareChallenge(body: String): Boolean =
+        body.contains("challenge-platform") ||
+        body.contains("cf-browser-verification") ||
+        body.contains("window._cf_chl_opt")
 }
