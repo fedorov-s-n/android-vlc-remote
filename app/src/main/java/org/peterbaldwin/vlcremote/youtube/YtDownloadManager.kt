@@ -28,6 +28,12 @@ object YtDownloadManager {
     private const val RATE_MIN = 1.1
     private const val RATE_STREAK = 2
     private const val MIN_BUFFER_SEC = 2   // also require at least this many seconds downloaded
+    // Give up (instead of polling every second forever with a stale "Downloading…") after this
+    // many consecutive polls where the helper is unreachable.
+    private const val MAX_POLL_FAILURES = 15
+    // If the download never sustains RATE_MIN (link slower than realtime), start playing anyway
+    // once buffered and this many RUNNING polls have elapsed, so it isn't stuck forever.
+    private const val START_FALLBACK_POLLS = 20
     private const val KEY_RESUME = "yt_dl_resume"
 
     /** Persisted so the playlist queue survives an app restart (matched by the playing file). */
@@ -55,6 +61,8 @@ object YtDownloadManager {
     private var subtitleName: String? = null
     private var playStarted = false
     private var fastPolls = 0
+    private var pollFailures = 0   // consecutive polls where the helper was unreachable
+    private var runningPolls = 0   // consecutive RUNNING polls seen before playback started
     private var downloadedSec = 0L
     private var resuming = false
 
@@ -221,6 +229,8 @@ object YtDownloadManager {
         this.subtitleName = subtitleName
         playStarted = false
         fastPolls = 0
+        pollFailures = 0
+        runningPolls = 0
         downloadedSec = 0L
 
         // Stop the previous video immediately so it doesn't keep playing/showing until the new
@@ -345,6 +355,8 @@ object YtDownloadManager {
                 title = null
                 subtitleUrl = null
                 playStarted = true  // VLC is already playing this file
+                pollFailures = 0
+                runningPolls = 0
 
                 // Restore the playlist queue (persisted at download start) if it's for this file,
                 // so next/previous + autoplay work after an app restart.
@@ -379,6 +391,7 @@ object YtDownloadManager {
                 var reschedule = true
                 when {
                     st.running -> {
+                        pollFailures = 0
                         val speed = averageSpeed(st.bytes, st.ms, st.total)
                         fastPolls = if (speed >= RATE_MIN) fastPolls + 1 else 0
                         val dlSec = if (st.total > 0) (st.bytes.toDouble() / st.total * durationSec).toLong() else 0
@@ -387,20 +400,38 @@ object YtDownloadManager {
                             Locale.US, "Downloading… %s/%s • %.1fs/s",
                             hms(dlSec), hms(durationSec), speed
                         )
-                        if (!playStarted && fastPolls >= RATE_STREAK && dlSec >= MIN_BUFFER_SEC) play(st.path)
+                        if (!playStarted) {
+                            runningPolls++
+                            val ready = fastPolls >= RATE_STREAK && dlSec >= MIN_BUFFER_SEC
+                            // Slow link that never reaches RATE_MIN: once buffered and we've waited
+                            // long enough, start anyway rather than never starting.
+                            val fallback = runningPolls >= START_FALLBACK_POLLS && dlSec >= MIN_BUFFER_SEC
+                            if (ready || fallback) play(st.path)
+                        }
                     }
                     st.done -> {
+                        pollFailures = 0
                         play(st.path)
                         downloadedSec = durationSec
                         statusText = "Downloaded • " + sizeMb(st.total) + " • " + clock(st.ms)
                         reschedule = false
                     }
-                    else -> {  // ERROR / UNKNOWN / network blip
+                    else -> {  // ERROR / UNKNOWN / network blip (empty state)
                         if (st.state == "ERROR" || st.state == "UNKNOWN") {
                             statusText = "Download failed"
                             ErrorLog.log("YouTube: helper reported download " + st.state + " for " + id)
                             jobKey = null
                             reschedule = false
+                        } else {
+                            // Empty state = helper unreachable. Tolerate transient blips, but stop
+                            // after MAX_POLL_FAILURES instead of polling forever.
+                            pollFailures++
+                            if (pollFailures >= MAX_POLL_FAILURES) {
+                                statusText = "Download failed (helper unreachable)"
+                                ErrorLog.log("YouTube: helper unreachable while polling $id")
+                                jobKey = null
+                                reschedule = false
+                            }
                         }
                     }
                 }
