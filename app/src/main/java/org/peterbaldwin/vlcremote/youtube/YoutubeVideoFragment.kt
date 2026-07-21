@@ -215,7 +215,6 @@ class YoutubeVideoFragment : Fragment() {
         // VLC plays the same chosen quality with the audio attached as an input-slave (no seeking).
         val helperOn = org.peterbaldwin.vlcremote.model.HelperConfig.isUsable(requireContext(), authority)
         RezkaPlayback.clear()
-        YoutubePlayback.clear()
         val titleWithQuality = if (quality.label.isNotBlank()) "${v.title} [${quality.label}]" else v.title
         val plUrls = arguments?.getStringArrayList(ARG_PL_URLS) ?: arrayListOf()
         val plTitles = arguments?.getStringArrayList(ARG_PL_TITLES) ?: arrayListOf()

@@ -21,7 +21,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import com.falcofemoralis.hdrezkaapp.utils.RezkaPlayback;
-import org.peterbaldwin.vlcremote.youtube.YoutubePlayback;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
