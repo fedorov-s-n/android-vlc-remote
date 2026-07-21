@@ -57,6 +57,11 @@ class ActorFragment : Fragment(), ActorView {
         return currentView
     }
 
+    override fun onDestroyView() {
+        if (::actorPresenter.isInitialized) actorPresenter.destroy()
+        super.onDestroyView()
+    }
+
     override fun setBaseInfo(actor: Actor) {
         try {
             // Prefer the original (English/Latin) name; show the Russian one as the secondary line.

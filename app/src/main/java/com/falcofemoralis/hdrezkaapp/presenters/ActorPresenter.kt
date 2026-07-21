@@ -6,8 +6,10 @@ import com.falcofemoralis.hdrezkaapp.objects.Actor
 import com.falcofemoralis.hdrezkaapp.objects.Film
 import com.falcofemoralis.hdrezkaapp.utils.ExceptionHelper
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.ActorView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.HttpStatusException
@@ -16,8 +18,16 @@ class ActorPresenter(
     private val actorView: ActorView,
     private var actor: Actor
 ) {
+    // Own scope on IO (network is blocking); cancelled in the fragment's onDestroyView so the
+    // Main continuation never touches a detached fragment, and blocking work leaves the CPU pool.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun destroy() {
+        scope.cancel()
+    }
+
     fun initActorData() {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 if (!actor.hasMainData) {
                     ActorModel.getActorMainInfo(actor)
@@ -32,14 +42,10 @@ class ActorPresenter(
                     }
                 }
             } catch (e: Exception) {
-                if (e is HttpStatusException) {
-                    if (e.statusCode == 503) {
-                        //actorView.showMsg(IConnection.ErrorType.PARSING_ERROR)
-                    } else {
+                if (e !is HttpStatusException || e.statusCode != 503) {
+                    withContext(Dispatchers.Main) {
                         ExceptionHelper.catchException(e, actorView)
                     }
-                } else {
-                    ExceptionHelper.catchException(e, actorView)
                 }
             }
         }

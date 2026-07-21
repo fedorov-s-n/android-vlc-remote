@@ -99,6 +99,11 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
         showRecent()
     }
 
+    override fun onDestroyView() {
+        if (::searchPresenter.isInitialized) searchPresenter.destroy()
+        super.onDestroyView()
+    }
+
     /** Clears the query and shows the recently opened films (invoked from the toolbar). */
     fun showHistory() {
         if (::autoCompleteTextView.isInitialized) {

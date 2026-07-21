@@ -24,6 +24,13 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
     private var query: String = ""
     private var token = ""
 
+    // IO scope cancelled from the fragment's onDestroyView (see [destroy]).
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun destroy() {
+        scope.cancel()
+    }
+
     fun initFilms() {
         filmsListView.setFilms(activeListFilms)
     }
@@ -38,7 +45,7 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
     }
 
     fun getFilms(text: String) {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 activeSearchFilms = SearchModel.getFilmsListByQuery(text)
 
@@ -58,7 +65,7 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
                     }
                 }
             } catch (e: Exception) {
-                catchException(e, searchView)
+                withContext(Dispatchers.Main) { catchException(e, searchView) }
                 return@launch
             }
         }
@@ -86,10 +93,10 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
         isLoading = true
         filmsListView.setProgressBarState(IProgressState.StateType.LOADING)
 
-        GlobalScope.launch {
+        scope.launch {
             try {
                 fun completeSearch() {
-                    GlobalScope.launch {
+                    scope.launch {
                         withContext(Dispatchers.Main) {
                             addFilms(loadedListFilms)
                             loadedListFilms.clear()
@@ -128,14 +135,14 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
             } catch (e: Exception) {
                 if (e is HttpStatusException) {
                     if (e.statusCode != 404) {
-                        catchException(e, searchView)
+                        withContext(Dispatchers.Main) { catchException(e, searchView) }
                     }
                     isLoading = false
                     withContext(Dispatchers.Main) {
                         filmsListView.setProgressBarState(IProgressState.StateType.LOADED)
                     }
                 } else {
-                    catchException(e, searchView)
+                    withContext(Dispatchers.Main) { catchException(e, searchView) }
                 }
 
                 return@launch
