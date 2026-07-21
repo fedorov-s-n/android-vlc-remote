@@ -177,7 +177,7 @@ object YtDownloadManager {
         val label = qualityLabel
         val pl = playlistName
         cancelJob()
-        try { MediaServer(ctx, auth).status().command.playback.stop() } catch (e: Exception) { e.printStackTrace() }
+        try { MediaServer(ctx, auth).status().command.playback.stop() } catch (e: Exception) { ErrorLog.log("YouTube: VLC stop failed", e) }
         statusText = "Preparing…"
         GlobalScope.launch(Dispatchers.IO) {
             val v = try { YoutubeClient.video(url) } catch (e: Exception) {
@@ -239,7 +239,7 @@ object YtDownloadManager {
         try {
             MediaServer(ctx, authority).status().command.playback.stop()
         } catch (e: Exception) {
-            e.printStackTrace()
+            ErrorLog.log("YouTube: VLC stop failed", e)
         }
 
         val cfg = HelperConfig.resolve(ctx, authority)
@@ -305,7 +305,7 @@ object YtDownloadManager {
             options.add(":input-slave=$audioUrl")
             MediaServer(ctx, authority).status().command.input.playWithOptions(videoUrl, options)
         } catch (e: Exception) {
-            e.printStackTrace()
+            ErrorLog.log("YouTube: direct play failed", e)
         }
     }
 
