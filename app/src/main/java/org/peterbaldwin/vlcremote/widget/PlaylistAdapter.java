@@ -54,20 +54,8 @@ public final class PlaylistAdapter extends BaseAdapter implements Serializable {
      */
     private final HashSet<Integer> mCurrentPositions;
 
-    /** URIs whose file has been deleted on the host — shown struck through. */
-    private final HashSet<String> mMissingUris = new HashSet<String>();
-
     public PlaylistAdapter() {
         mCurrentPositions = new HashSet<Integer>(4);
-    }
-
-    /** Marks the given item URIs as missing (deleted on the host) for strike-through rendering. */
-    public void setMissingUris(java.util.Collection<String> uris) {
-        mMissingUris.clear();
-        if (uris != null) {
-            mMissingUris.addAll(uris);
-        }
-        notifyDataSetChanged();
     }
 
     @Override
@@ -98,19 +86,7 @@ public final class PlaylistAdapter extends BaseAdapter implements Serializable {
         if(holder.playlistHeading.getText().equals(holder.playlistText.getText())) {
             holder.playlistText.setText("");
         }
-        boolean missing = item.getUri() != null && mMissingUris.contains(item.getUri());
-        applyStrike(holder.playlistHeading, missing);
-        applyStrike(holder.playlistText, missing);
         holder.icon.setVisibility(item.isCurrent() ? View.VISIBLE : View.GONE);
-    }
-
-    private static void applyStrike(TextView tv, boolean strike) {
-        int flags = tv.getPaintFlags();
-        if (strike) {
-            tv.setPaintFlags(flags | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-        } else {
-            tv.setPaintFlags(flags & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-        }
     }
 
     @Override

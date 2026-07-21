@@ -364,7 +364,7 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
         public void run() { checkMissingFiles(); }
     };
 
-    /** Strikes through playlist items whose local file no longer exists on the host. */
+    /** Removes playlist items whose local file no longer exists on the host. */
     private void checkMissingFiles() {
         if (getActivity() == null || mAdapter == null) {
             return;
@@ -381,7 +381,6 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
             }
         }
         if (paths.isEmpty()) {
-            mAdapter.setMissingUris(java.util.Collections.<String>emptyList());
             return;
         }
         android.content.SharedPreferences prefs =
@@ -417,15 +416,37 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
                         missing.add(uris.get(i));
                     }
                 }
+                if (missing.isEmpty()) {
+                    return;
+                }
                 mCheckHandler.post(new Runnable() {
                     public void run() {
-                        if (mAdapter != null) {
-                            mAdapter.setMissingUris(missing);
-                        }
+                        removeMissingItems(missing);
                     }
                 });
             }
         }).start();
+    }
+
+    /** Deletes the given (missing-file) items from VLC's playlist and the local list. */
+    private void removeMissingItems(java.util.Set<String> missingUris) {
+        if (getActivity() == null || getMediaServer() == null || mAdapter == null) {
+            return;
+        }
+        java.util.ArrayList<PlaylistItem> kept = new java.util.ArrayList<PlaylistItem>();
+        boolean changed = false;
+        for (int i = 0; i < mAdapter.getCount(); i++) {
+            PlaylistItem item = mAdapter.getItem(i);
+            if (item != null && item.getUri() != null && missingUris.contains(item.getUri())) {
+                getMediaServer().status().command.playback.delete(item.getId());
+                changed = true;
+            } else {
+                kept.add(item);
+            }
+        }
+        if (changed) {
+            mAdapter.setItems(kept);
+        }
     }
 
     private static String localPath(String uri) {
