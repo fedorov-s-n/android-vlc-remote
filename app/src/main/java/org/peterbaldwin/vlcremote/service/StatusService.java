@@ -44,7 +44,7 @@ import org.peterbaldwin.vlcremote.widget.NotificationControls;
  */
 public class StatusService extends Service implements Handler.Callback {
 
-    public static boolean USE_XML_STATUS = false;
+    public static volatile boolean USE_XML_STATUS = false;
     
     private static boolean HAS_CANCELLED_NOTIFICATION;
     
