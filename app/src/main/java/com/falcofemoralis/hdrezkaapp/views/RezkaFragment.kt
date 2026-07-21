@@ -229,7 +229,11 @@ class RezkaFragment : Fragment(), HdrezkaHost {
                 if (isBackStack) {
                     fTrans.addToBackStack(backStackTag)
                 }
-                fTrans.commit()
+                // Allow state loss: this can be driven from lifecycle callbacks that
+                // run after onSaveInstanceState (e.g. PlaybackActivity.onActivityResult
+                // -> tab change -> setUserVisibleHint), where a plain commit() throws
+                // IllegalStateException and crashes the app.
+                fTrans.commitAllowingStateLoss()
             }
             Action.NEXT_FRAGMENT_REPLACE -> {
                 if (fragmentReceiver != null) {
@@ -238,7 +242,8 @@ class RezkaFragment : Fragment(), HdrezkaHost {
                 if (isBackStack) {
                     fTrans.addToBackStack(backStackTag)
                 }
-                fTrans.commit()
+                // See note above: commit() can be reached after onSaveInstanceState.
+                fTrans.commitAllowingStateLoss()
                 fm.executePendingTransactions()
                 init?.invoke()
             }
