@@ -488,17 +488,6 @@ object FilmModel {
         }
     }
 
-    fun getFilmPosterByLink(filmLink: String): String? {
-        val filmPage: Document = BaseModel.getJsoup(filmLink).get()
-        val posterElements = filmPage.select(FILM_POSTER)
-        return if (posterElements.size > 0) {
-            val posterElement: Element = posterElements[0]
-            posterElement.select("img").attr("src")
-        } else {
-            null
-        }
-    }
-
     fun postWatch(watchId: Int) {
         val result: Element? = BaseModel.getJsoup(SettingsData.provider + WATCH_ADD)
             .data("id", watchId.toString())
@@ -603,16 +592,6 @@ object FilmModel {
                 }
             }
         }
-    }
-
-    fun br2nl(html: String?): String? {
-        if (html == null) return html
-        val document = Jsoup.parse(html)
-        document.outputSettings(Document.OutputSettings().prettyPrint(false)) //makes html() preserve linebreaks and spacing
-        document.select("br").append("\\n")
-        document.select("p").prepend("\\n\\n")
-        val s = document.html().replace("\\\\n".toRegex(), "\n")
-        return Jsoup.clean(s, "", Safelist.none(), Document.OutputSettings().prettyPrint(false))
     }
 
     private fun timeVtt(srt: String): Float {
