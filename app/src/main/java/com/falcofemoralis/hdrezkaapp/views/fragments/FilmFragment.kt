@@ -125,6 +125,11 @@ class FilmFragment : Fragment(), FilmView {
         super.onDestroy()
     }
 
+    override fun onDestroyView() {
+        if (::filmPresenter.isInitialized) filmPresenter.destroy()
+        super.onDestroyView()
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         if (SettingsData.deviceType != DeviceType.TV && context?.packageManager != null && context?.packageManager?.hasSystemFeature(PackageManager.FEATURE_WEBVIEW) == false) {
             org.peterbaldwin.vlcremote.model.ErrorLog.toast(requireContext(), getString(R.string.no_webview_installed), null)

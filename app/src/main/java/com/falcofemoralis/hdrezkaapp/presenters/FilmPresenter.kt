@@ -9,8 +9,10 @@ import com.falcofemoralis.hdrezkaapp.models.FilmModel
 import com.falcofemoralis.hdrezkaapp.objects.*
 import com.falcofemoralis.hdrezkaapp.utils.ExceptionHelper.catchException
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.FilmView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.HttpStatusException
@@ -23,8 +25,15 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
     private var commentsPage = 1
     private var isCommentsLoading: Boolean = false
 
+    // IO scope cancelled from FilmFragment.onDestroyView (see [destroy]).
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun destroy() {
+        scope.cancel()
+    }
+
     fun initFilmData() {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 if (!film.hasMainData) {
                     FilmModel.getMainData(film)
@@ -63,9 +72,9 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                     } else {
                         film.filmId
                     }
-                    catchException(IllegalArgumentException("Битая ссылка: filmId=$nul, filmLink=${film.filmLink}"), filmView)
+                    withContext(Dispatchers.Main) { catchException(IllegalArgumentException("Битая ссылка: filmId=$nul, filmLink=${film.filmLink}"), filmView) }
                 } else {
-                    catchException(e, filmView)
+                    withContext(Dispatchers.Main) { catchException(e, filmView) }
                 }
                 return@launch
             }
@@ -81,7 +90,7 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
             val actors = arrayOfNulls<Actor>(film.actors!!.size)
 
             for ((index, actor) in film.actors!!.withIndex()) {
-                GlobalScope.launch {
+                scope.launch {
                     try {
                         actors[index] = ActorModel.getActorMainInfo(actor)
 
@@ -102,10 +111,10 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                             if (e.statusCode == 503) {
                                 //filmView.showMsg(IConnection.ErrorType.PARSING_ERROR)
                             } else {
-                                catchException(e, filmView)
+                                withContext(Dispatchers.Main) { catchException(e, filmView) }
                             }
                         } else {
-                            catchException(e, filmView)
+                            withContext(Dispatchers.Main) { catchException(e, filmView) }
                         }
                         return@launch
                     }
@@ -118,11 +127,11 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
 
     fun setBookmark(bookmarkId: String) {
         film.filmId?.let {
-            GlobalScope.launch {
+            scope.launch {
                 try {
                     BookmarksModel.postBookmark(it, bookmarkId)
                 } catch (e: Exception) {
-                    catchException(e, filmView)
+                    withContext(Dispatchers.Main) { catchException(e, filmView) }
                     return@launch
                 }
             }
@@ -159,7 +168,7 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
         } else {
             isCommentsLoading = true
 
-            GlobalScope.launch {
+            scope.launch {
                 try {
                     film.filmId?.let {
                         CommentsModel.getCommentsFromPage(commentsPage, it.toString())
@@ -176,10 +185,10 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                 } catch (e: Exception) {
                     if (e is HttpStatusException) {
                         if (e.statusCode != 404) {
-                            catchException(e, filmView)
+                            withContext(Dispatchers.Main) { catchException(e, filmView) }
                         }
                     } else {
-                        catchException(e, filmView)
+                        withContext(Dispatchers.Main) { catchException(e, filmView) }
                     }
                     isCommentsLoading = false
 
@@ -198,7 +207,7 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
     }
 
     fun updateWatch(scheduleItem: Schedule, btn: ImageView) {
-        GlobalScope.launch {
+        scope.launch {
             scheduleItem.watchId?.let {
                 try {
                     FilmModel.postWatch(it)
@@ -208,14 +217,14 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                         filmView.changeWatchState(scheduleItem.isWatched, btn)
                     }
                 } catch (e: Exception) {
-                    catchException(e, filmView)
+                    withContext(Dispatchers.Main) { catchException(e, filmView) }
                 }
             }
         }
     }
 
     fun createNewCatalogue(name: String) {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 val bookmark: Bookmark = BookmarksModel.postCatalog(name)
                 film.filmId?.let { BookmarksModel.postBookmark(it, bookmark.catId) }
@@ -228,13 +237,13 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                     filmView.updateBookmarksPager()
                 }
             } catch (e: Exception) {
-                catchException(e, filmView)
+                withContext(Dispatchers.Main) { catchException(e, filmView) }
             }
         }
     }
 
     fun initTranslationsSeries(translation: Voice, callback: (seasons: LinkedHashMap<String, ArrayList<String>>) -> Unit) {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 film.filmId?.let {
                     if (translation.seasons == null) {
@@ -246,28 +255,28 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                     }
                 }
             } catch (e: Exception) {
-                catchException(e, filmView)
+                withContext(Dispatchers.Main) { catchException(e, filmView) }
             }
         }
     }
 
     /** Fetches the movie streams for a translation and reports back (for the quality/subtitle spinners). */
     fun loadStreamsForMovie(translation: Voice, onLoaded: () -> Unit) {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 if (translation.streams == null) {
                     film.filmId?.let { FilmModel.getStreamsByTranslationId(it, translation) }
                 }
                 withContext(Dispatchers.Main) { onLoaded() }
             } catch (e: Exception) {
-                catchException(e, filmView)
+                withContext(Dispatchers.Main) { catchException(e, filmView) }
             }
         }
     }
 
     /** Fetches the streams/subtitles for a series episode and reports back (for the quality/subtitle spinners). */
     fun loadStreamsForEpisode(translation: Voice, season: String, episode: String, onLoaded: () -> Unit) {
-        GlobalScope.launch {
+        scope.launch {
             try {
                 film.filmId?.let {
                     translation.selectedEpisode = Pair(season, episode)
@@ -275,7 +284,7 @@ class FilmPresenter(private val filmView: FilmView, val film: Film) {
                 }
                 withContext(Dispatchers.Main) { onLoaded() }
             } catch (e: Exception) {
-                catchException(e, filmView)
+                withContext(Dispatchers.Main) { catchException(e, filmView) }
             }
         }
     }
