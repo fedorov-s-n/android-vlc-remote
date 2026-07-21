@@ -22,7 +22,13 @@ object SearchModel {
             val film = Film(link)
             film.title = el.select("span.enty").text()
             film.ratingKP = el.select("span.rating i").text()
-           // film.subInfo = el.select("a")[0].ownText()
+            // The anchor's own text (outside the enty/rating spans) is the original title +
+            // year, e.g. "(Venom, 2018)". Extract the original (English/Latin) name from it.
+            val extra = el.select("a").firstOrNull()?.ownText()?.trim() ?: ""
+            val orig = extra.trim('(', ')', ' ')
+                .replace(Regex(",\\s*\\d{4}\\s*$"), "")
+                .trim()
+            if (orig.isNotBlank()) film.origTitle = orig
 
             val defaultType = FilmType.FILM
             val als =  el.select("a")

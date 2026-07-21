@@ -85,7 +85,7 @@ class FilmsListRecyclerViewAdapter(private val films: ArrayList<Film>, private v
         glide.into(holder.filmPoster)
         glide.submit()
 
-        holder.titleView.text = film.title
+        holder.titleView.text = film.origTitle?.takeIf { it.isNotBlank() } ?: film.title
 
         var info = ""
         film.year?.let {

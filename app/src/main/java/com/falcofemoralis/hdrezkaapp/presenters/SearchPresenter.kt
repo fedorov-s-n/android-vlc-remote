@@ -49,7 +49,8 @@ class SearchPresenter(private val searchView: SearchView, private val filmsListV
                 } else {
                     val searchFilms: ArrayList<String> = ArrayList()
                     for (film in activeSearchFilms) {
-                        searchFilms.add("${film.title} ${film.additionalInfo} ${film.ratingIMDB}")
+                        val name = film.origTitle?.takeIf { it.isNotBlank() } ?: film.title
+                        searchFilms.add("$name ${film.additionalInfo} ${film.ratingIMDB}")
                     }
 
                     withContext(Dispatchers.Main) {

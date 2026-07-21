@@ -150,8 +150,10 @@ class FilmFragment : Fragment(), FilmView {
         pendingHistSeason = own?.season
         pendingHistEpisode = own?.episode
 
-        // Record/refresh this page in the recent-films history (keeps its selections).
-        HdrezkaHistory.addRecent(historyCtx, currentFilmLink, argFilm.title, argFilm.posterPath)
+        // Record/refresh this page in the recent-films history (keeps its selections). Prefer the
+        // original (English) name; it is refreshed again once the full film data loads (below).
+        HdrezkaHistory.addRecent(historyCtx, currentFilmLink,
+            argFilm.origTitle?.takeIf { it.isNotBlank() } ?: argFilm.title, argFilm.posterPath)
 
         filmPresenter.initFilmData()
 
@@ -470,6 +472,12 @@ class FilmFragment : Fragment(), FilmView {
         // English/Latin) as the main title and show the Russian one underneath (fallback).
         val engTitle = film.origTitle?.takeIf { it.isNotBlank() }
         currentView.findViewById<TextView>(R.id.fragment_film_tv_title).text = engTitle ?: film.title
+        // Now that the detail page gave us the original title, refresh the history entry so films
+        // opened from the catalogue (where lists carry only the Russian name) also show English.
+        film.filmLink?.let { link ->
+            try { HdrezkaHistory.addRecent(requireContext(), link, engTitle ?: film.title, film.posterPath) }
+            catch (e: Exception) { org.peterbaldwin.vlcremote.model.ErrorLog.log("Rezka: history refresh failed", e) }
+        }
         val origTileView = currentView.findViewById<TextView>(R.id.fragment_film_tv_origtitle)
         if (engTitle != null && !film.title.isNullOrEmpty()) {
             origTileView.text = film.title
