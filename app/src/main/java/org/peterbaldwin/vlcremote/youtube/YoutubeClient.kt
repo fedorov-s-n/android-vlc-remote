@@ -240,8 +240,6 @@ object YoutubeClient {
         }
     }
 
-    private fun isMp4(mime: String?): Boolean = mime != null && mime.contains("mp4")
-
     /** Codec compatibility rank for picking one stream per resolution: AVC/H.264 (0) is the
      *  most widely decodable, then VP9 (1), then AV1 (2). Lower is better. */
     private fun videoCodecRank(v: VideoStream): Int {
