@@ -244,7 +244,7 @@ object YtDownloadManager {
 
     /**
      * Reconnects to a still-running/finished helper job after the app was restarted, given the
-     * file VLC is currently playing (basename mux_<id>.mkv). Resumes the progress indicator and
+     * file VLC is currently playing (basename mux_<id>.ts). Resumes the progress indicator and
      * polling without restarting playback.
      */
     @JvmStatic

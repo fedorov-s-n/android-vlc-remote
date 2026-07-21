@@ -219,10 +219,10 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         handleAutorun(status);
 
         // After an app restart, reconnect to a still-running download for the file VLC is
-        // currently playing (mux_<id>.mkv) so the progress indicator + polling resume.
+        // currently playing (mux_<id>.ts) so the progress indicator + polling resume.
         if (!org.peterbaldwin.vlcremote.youtube.YtDownloadManager.isActive() && status.getTrack() != null) {
             String fn = status.getTrack().getName();
-            if (fn != null && fn.startsWith("mux_") && fn.endsWith(".mp4")) {
+            if (fn != null && fn.startsWith("mux_") && fn.endsWith(".ts")) {
                 Preferences prefs = Preferences.get(getActivity());
                 String authority = prefs == null ? null : prefs.getAuthority();
                 if (authority != null) {
@@ -251,8 +251,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
 
         int time = status.getTime();
         int length = status.getLength();
-        // During a YouTube download the file (and VLC's reported length) only covers what has
-        // been downloaded; show the real full duration from NewPipe instead.
+        // VLC only estimates a growing .ts file's length, and that estimate keeps changing as more
+        // downloads; use the real full duration from NewPipe so the timeline is stable and correct.
         long ytDuration = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.totalDurationSec();
         if (ytDuration > 0) {
             length = (int) ytDuration;

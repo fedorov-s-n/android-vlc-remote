@@ -42,7 +42,7 @@ object MuxClient {
         return if (path.isEmpty() || path.startsWith("ERROR")) null else path
     }
 
-    /** @param key the file path or basename (mux_<id>.mkv) identifying the job. */
+    /** @param key the file path or basename (mux_<id>.ts) identifying the job. */
     fun status(host: String, port: Int, key: String): Status {
         val body = get("http://$host:$port/mux/status?path=" + URLEncoder.encode(key, "UTF-8"))
             ?: return Status("")

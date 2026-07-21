@@ -11,9 +11,9 @@ VLC не умеет брать по URL сам:
 - POST /content?name=...       — сохраняет тело запроса во временный файл
                                  (напр. субтитры), возвращает путь (text/plain).
 - GET  /mux/start?v=..&a=..     — запускает фоновую склейку video+audio (ffmpeg,
-                                 copy) во фрагментированный mp4 (играбелен по мере
-                                 роста, любой кодек, метаданные видны VLC);
-                                 возвращает путь к файлу.
+                                 copy) в MPEG-TS (играбелен по мере роста, VLC
+                                 умеет перематывать растущий .ts по байтам; кодеки
+                                 ограничены H.264+AAC); возвращает путь к файлу.
 - GET  /mux/status?id=..        — "RUNNING <bytes> <total> <ms> <path>"
                                  | "DONE <bytes> <total> <ms> <path>"
                                  | "ERROR <code>" | "UNKNOWN".
@@ -131,10 +131,10 @@ def _active_count() -> int:
 
 
 def _resolve_jid(pathlike: str) -> str:
-    """Accept a full path, a basename (mux_<jid>.mp4) or a bare id, return the job id."""
+    """Accept a full path, a basename (mux_<jid>.ts) or a bare id, return the job id."""
     base = os.path.basename(pathlike or "")
-    if base.startswith("mux_") and base.endswith(".mp4"):
-        return base[len("mux_"):-len(".mp4")]
+    if base.startswith("mux_") and base.endswith(".ts"):
+        return base[len("mux_"):-len(".ts")]
     return pathlike or ""
 
 
@@ -149,16 +149,18 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
                 return job["path"], None
         if _active_count() >= MAX_JOBS:
             return None, "busy: %d downloads already running" % MAX_JOBS
-        path = os.path.join(tempfile.gettempdir(), "mux_%s.mp4" % jid)
+        path = os.path.join(tempfile.gettempdir(), "mux_%s.ts" % jid)
         try:
             if os.path.exists(path):
                 os.remove(path)
         except OSError:
             pass
-        # Fragmented mp4: playable while still being written (VLC can start during download),
-        # holds any codec (AVC/VP9/AV1 + AAC/Opus via -c copy), AND unlike MKV, VLC exposes its
-        # title/artist/album tags to the Now Playing status. Embed them so it shows the video /
-        # channel / playlist instead of the temp filename.
+        # MPEG-TS: unlike a fragmented mp4 (whose seek index is only written on completion, so a
+        # file opened while still downloading stays unseekable for the whole session), VLC seeks a
+        # growing .ts by byte offset — so the user can scrub within whatever has downloaded, live.
+        # The tradeoff: with -c copy, TS can only carry H.264 video + AAC audio, so the app must
+        # pick those streams (video quality is therefore capped at YouTube's AVC, ~1080p). TS holds
+        # no title/artist/album tags, so the app shows those itself (see YtDownloadManager).
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", v, "-i", a, "-c", "copy"]
         if title:
             cmd += ["-metadata", "title=" + title]
@@ -166,7 +168,7 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
             cmd += ["-metadata", "artist=" + artist]
         if album:
             cmd += ["-metadata", "album=" + album]
-        cmd += ["-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", path]
+        cmd += ["-f", "mpegts", path]
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _mux_jobs[jid] = {"path": path, "proc": proc,
                           "total": _clen(v) + _clen(a), "start": time.time(),

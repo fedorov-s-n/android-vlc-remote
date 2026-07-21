@@ -52,7 +52,7 @@ data class YtComment(
 /** One page of comments plus whether more can be loaded. */
 data class YtCommentPage(val items: List<YtComment>, val hasMore: Boolean)
 
-/** A selectable video quality (mp4 video-only stream; audio is added by the mux helper). */
+/** A selectable video quality (H.264 video-only stream; audio is added by the mux helper). */
 data class YtQuality(val label: String, val url: String, val isVideoOnly: Boolean)
 
 /** A selectable audio track (muxed with the chosen video). */
@@ -74,8 +74,8 @@ data class YtChannel(
     val hasMoreVideos: Boolean
 )
 
-/** Details of a single video. All qualities are mp4 video-only; [audioUrl] is the
- *  auto-chosen best audio, muxed in by the helper. */
+/** Details of a single video. All qualities are H.264 video-only; [audioUrl] is the
+ *  auto-chosen best AAC audio, muxed in by the helper. */
 data class YtVideo(
     val title: String,
     val uploader: String,
@@ -146,24 +146,25 @@ object YoutubeClient {
         ensureInit()
         val info = StreamInfo.getInfo(ServiceList.YouTube, url)
 
-        // Every quality is downloaded + muxed (into MKV, which holds any codec) with a separate
-        // audio track. List the video-only streams, one entry per resolution (dedup), highest
-        // resolution first; within a resolution prefer mp4/AVC, then higher bitrate.
+        // The helper muxes video+audio into MPEG-TS (so VLC can seek the file while it is still
+        // downloading). With -c copy, TS can only carry H.264 video + AAC audio, so we only offer
+        // those: pick H.264/AVC video-only streams, one entry per resolution (dedup), highest
+        // resolution first, then higher bitrate. (This caps quality at YouTube's AVC, ~1080p —
+        // its 1440p/4K are VP9/AV1-only and can't go into TS without re-encoding.)
         val qualities = info.videoOnlyStreams
-            .filter { usable(it) }
+            .filter { usable(it) && videoCodecRank(it) == 0 }   // AVC/H.264 only
             .sortedWith(
                 compareByDescending<VideoStream> { resolutionValue(it.resolution) }
-                    .thenBy { videoCodecRank(it) }      // most compatible codec first (AVC>VP9>AV1)
                     .thenByDescending { it.bitrate }
             )
             .distinctBy { it.resolution }
             .map { YtQuality(it.resolution ?: "?", it.content, true) }
 
         // Audio tracks, best first (quality, then language original>english>russian), one entry
-        // per track/language. The first is the default; the user can pick another.
+        // per track/language. Only AAC (m4a) — Opus can't go into TS via copy. First is default.
         val dur = info.duration
         val audioStreams = info.audioStreams
-            .filter { usable(it) }
+            .filter { usable(it) && it.format == org.schabi.newpipe.extractor.MediaFormat.M4A }
             .sortedWith(compareByDescending<AudioStream> { audioBitrate(it, dur) }.thenBy { audioLangRank(it) })
             .distinctBy { audioTrackKey(it) }
         val audios = audioStreams.map { YtAudio(audioLabel(it, dur), it.content) }
