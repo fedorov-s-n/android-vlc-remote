@@ -35,9 +35,29 @@ object RezkaPlayback {
     private var subtitleLang: String? = null
     private var authority: String? = null
 
+    // True from the moment we begin switching episode (start/next/previous) until shortly after the
+    // new stream has actually been sent to VLC. Autorun consults this so an app-initiated stop
+    // isn't mistaken for the current episode ending on its own and auto-advanced. Cleared by a
+    // timer (armed when the new play is issued) rather than by a status, so a lagging "old episode
+    // playing" poll can't clear it early.
+    @Volatile
+    private var switching = false
+    private val clearSwitching = Runnable { switching = false }
+    private const val SWITCH_GUARD_MS = 6000L
+
+    private fun beginSwitch() {
+        switching = true
+        handler.removeCallbacks(clearSwitching)
+        handler.postDelayed(clearSwitching, SWITCH_GUARD_MS)  // fallback if the play never happens
+    }
+
     /** True while the last thing started via this app was an HDrezka series episode. */
     @JvmStatic
     fun isActiveSeries(): Boolean = voice?.seasons != null && season != null && episode != null
+
+    /** True while a switch is in flight — autorun skips auto-advancing while set. */
+    @JvmStatic
+    fun isSwitching(): Boolean = switching
 
     /** Forget the series context (called when something else starts playing). */
     @JvmStatic
@@ -49,6 +69,8 @@ object RezkaPlayback {
         qualityLabel = null
         subtitleLang = null
         authority = null
+        handler.removeCallbacks(clearSwitching)
+        switching = false
     }
 
     /** Plays a movie stream; clears any series context. */
@@ -63,6 +85,7 @@ object RezkaPlayback {
     fun playSeries(context: Context, authority: String, film: Film, voice: Voice, season: String, episode: String, stream: Stream, subtitle: Subtitle?) {
         org.peterbaldwin.vlcremote.youtube.YoutubePlayback.clear()
         org.peterbaldwin.vlcremote.youtube.YtDownloadManager.cancel()
+        beginSwitch()   // suppress autorun until this episode is playing
         this.film = film
         this.voice = voice
         this.season = season
@@ -123,6 +146,7 @@ object RezkaPlayback {
 
         val newSeason = seasonKeys[newSi]
         val newEpisode = seasons[newSeason]?.getOrNull(newEi) ?: return false
+        beginSwitch()   // suppress autorun during the stop while the new episode loads
         loadAndPlayEpisode(context, newSeason, newEpisode)
         return true
     }
@@ -160,6 +184,12 @@ object RezkaPlayback {
     }
 
     private fun doPlay(context: Context, authority: String, streamUrl: String, title: String?, subtitle: Subtitle?) {
+        // Restart the guard countdown from the moment the new stream is actually sent, so the
+        // suppression window covers the load + VLC transition regardless of how long the fetch took.
+        if (switching) {
+            handler.removeCallbacks(clearSwitching)
+            handler.postDelayed(clearSwitching, SWITCH_GUARD_MS)
+        }
         val server = MediaServer(context, authority)
         // Title rides only in the URL-encoded :meta-title option (not the MRL), so it can't
         // corrupt the stream URL; VLC then shows it in the now-playing for any stream.

@@ -132,6 +132,9 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
             // User stopped on purpose: don't let autorun start the next queue item.
             mAutorunFiredForThisEnd = true;
         } else if (v == mButtonPlaylistSkipBackward) {
+            // Manual navigation: this stops the current item, so don't let autorun also fire on
+            // the resulting "stopped" state (that would advance an extra step near the end).
+            mAutorunFiredForThisEnd = true;
             // For an HDrezka series, step to the previous episode (crossing seasons); at
             // the very first episode show a toast and do nothing. Otherwise fall back to
             // normal VLC playlist navigation.
@@ -147,6 +150,8 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
                 playlist().previous();
             }
         } else if (v == mButtonPlaylistSkipForward) {
+            // Manual navigation: suppress autorun for the resulting "stopped" state (see above).
+            mAutorunFiredForThisEnd = true;
             if (RezkaPlayback.isActiveSeries()) {
                 if (!RezkaPlayback.playNext(getActivity())) {
                     Toast.makeText(getActivity(), R.string.rezka_no_next_episode, Toast.LENGTH_SHORT).show();
@@ -290,19 +295,26 @@ public class PlaybackFragment extends MediaFragment implements View.OnClickListe
         if (status.isStopped()) {
             if (autorun && !mAutorunFiredForThisEnd
                     && mAutorunPrevLength > 0 && mAutorunPrevTime >= mAutorunPrevLength - 5) {
-                if (RezkaPlayback.isActiveSeries()) {
+                if (RezkaPlayback.isActiveSeries() && !RezkaPlayback.isSwitching()) {
                     mAutorunFiredForThisEnd = true;
                     RezkaPlayback.playNext(getActivity());
-                } else if (org.peterbaldwin.vlcremote.youtube.YtDownloadManager.hasQueue()) {
+                } else if (org.peterbaldwin.vlcremote.youtube.YtDownloadManager.hasQueue()
+                        && !org.peterbaldwin.vlcremote.youtube.YtDownloadManager.isSwitching()) {
                     mAutorunFiredForThisEnd = true;
                     org.peterbaldwin.vlcremote.youtube.YtDownloadManager.playNext(getActivity());
                 }
             }
         } else {
             mAutorunFiredForThisEnd = false;
-            if (status.getLength() > 0) {
+            // For a growing YouTube .ts VLC only reports a tiny, still-growing length estimate, so
+            // the raw length would make the video look "near its end" almost immediately — and any
+            // stop (e.g. our own stop when switching videos) would then wrongly autoplay the next
+            // one, skipping ahead. Use the real full duration to judge the end instead.
+            long ytDuration = org.peterbaldwin.vlcremote.youtube.YtDownloadManager.totalDurationSec();
+            int length = ytDuration > 0 ? (int) ytDuration : status.getLength();
+            if (length > 0) {
                 mAutorunPrevTime = status.getTime();
-                mAutorunPrevLength = status.getLength();
+                mAutorunPrevLength = length;
             }
         }
     }

@@ -56,6 +56,12 @@ object YtDownloadManager {
     private var downloadedSec = 0L
     private var resuming = false
 
+    // True from the moment we begin switching to a video (start/next/previous) until it actually
+    // starts playing. Autorun consults this so an app-initiated stop (which looks like "near the
+    // end" to VLC) isn't mistaken for the current video ending on its own and auto-advanced.
+    @Volatile
+    private var switching = false
+
     // Playlist queue so the Now Playing next/previous buttons and autoplay can step through it.
     private var queue: List<String> = emptyList()
     private var queueTitles: List<String> = emptyList()
@@ -96,6 +102,11 @@ object YtDownloadManager {
     /** True while playing from a YouTube playlist — the Now Playing next/prev + autoplay use it. */
     @JvmStatic
     fun hasQueue(): Boolean = isActive() && queue.isNotEmpty()
+
+    /** True while a switch (start/next/previous) is in flight, before the new video plays. Autorun
+     *  skips auto-advancing while this holds, so an app-initiated stop isn't read as a natural end. */
+    @JvmStatic
+    fun isSwitching(): Boolean = switching
 
     /**
      * Starts a download+play job for a video the fragment already resolved. [queueUrls]/[index]
@@ -139,6 +150,7 @@ object YtDownloadManager {
         if (newIndex !in queue.indices) return false
         val auth = authority ?: return false
         val ctx = appContext ?: context.applicationContext
+        switching = true   // set before we stop VLC below, so autorun ignores that stop
         queueIndex = newIndex
         val url = queue[newIndex]
         val label = qualityLabel
@@ -175,6 +187,7 @@ object YtDownloadManager {
         subtitleName: String?
     ) {
         cancelJob()
+        switching = true   // covers start()-from-list; cleared once play() actually begins
         val ctx = context.applicationContext
         appContext = ctx
         this.authority = authority
@@ -347,6 +360,10 @@ object YtDownloadManager {
         val auth = authority ?: return
         val ctx = appContext ?: return
         playStarted = true
+        // Clear the switch guard a few seconds after we issue play — not immediately — so a status
+        // poll still lagging behind on the old "stopped" state can't slip an autorun in first.
+        // (cancelJob's removeCallbacksAndMessages clears this too if we switch again meanwhile.)
+        handler.postDelayed({ switching = false }, 4000)
         val server = MediaServer(ctx, auth)
         server.status().command.input.playWithMetaTitle(path, title)
         subtitleUrl?.let { SubtitleAttacher.attach(ctx, server, auth, it, subtitleName ?: "sub.vtt") }
@@ -391,6 +408,7 @@ object YtDownloadManager {
     @JvmStatic
     fun cancel() {
         cancelJob()
+        switching = false
         queue = emptyList()
         queueTitles = emptyList()
         queueIndex = -1
