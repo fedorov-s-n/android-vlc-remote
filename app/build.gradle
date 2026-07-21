@@ -48,9 +48,11 @@ android {
         // commons-logging (pulled in transitively) duplicates Android's built-in apache
         // classes; the debug build ships the same jar and runs fine, so don't fail release.
         disable 'DuplicatePlatformClasses'
-        // Don't let pre-existing lint findings in the merged rezka layouts block the release APK.
-        checkReleaseBuilds false
-        abortOnError false
+        // Re-enable the release lint gate, but baseline the large pre-existing finding set
+        // (merged rezka layouts etc.) so only NEW regressions fail the build.
+        baseline = file("lint-baseline.xml")
+        checkReleaseBuilds true
+        abortOnError true
     }
     compileOptions {
         coreLibraryDesugaringEnabled true

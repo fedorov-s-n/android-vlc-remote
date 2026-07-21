@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.2)" variant="fatal" version="8.13.2">
+
+    <issue
+        id="InvalidId"
+        message="Invalid id; ID definitions **must** be of the form `@+id/name`; did you mean `@+id/title`?"
+        errorLine1="        android:id=&quot;@+android:id/title&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/preference_progress_category.xml"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The layout &quot;album_appwidget&quot; in layout-finger has no declaration in the base `layout` folder; this can lead to crashes when the resource is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-finger/album_appwidget.xml"
+            line="2"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;albumart_mp_unknown&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/albumart_mp_unknown.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;albumart_mp_unknown&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/albumart_mp_unknown.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;appwidget_button&quot; in drawable-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2=" ~~~~~~~~">
+        <location
+            file="src/main/res/drawable-finger/appwidget_button.xml"
+            line="2"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;appwidget_divider&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/appwidget_divider.9.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;appwidget_divider&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/appwidget_divider.9.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_next&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_appwidget_music_next.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_next&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_appwidget_music_next.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_pause&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_appwidget_music_pause.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_pause&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_appwidget_music_pause.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_play&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_appwidget_music_play.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_appwidget_music_play&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_appwidget_music_play.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_media_next&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_media_next.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_media_pause&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_media_pause.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_media_play&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_media_play.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_media_prev&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_media_prev.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_album_playback&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_album_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_album_playback&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_album_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_artist_playback&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_artist_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_artist_playback&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_artist_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_all_btn&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_repeat_all_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_all_btn&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_repeat_all_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_off_btn&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_repeat_off_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_off_btn&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_repeat_off_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_once_btn&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_repeat_once_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_repeat_once_btn&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_repeat_once_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_shuffle_off_btn&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_shuffle_off_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_shuffle_off_btn&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_shuffle_off_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_shuffle_on_btn&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_shuffle_on_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_shuffle_on_btn&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_shuffle_on_btn.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_song_playback&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/ic_mp_song_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_mp_song_playback&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/ic_mp_song_playback.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_tab_albums&quot; in drawable-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2=" ~~~~~~~~">
+        <location
+            file="src/main/res/drawable-finger/ic_tab_albums.xml"
+            line="17"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_tab_artists&quot; in drawable-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2=" ~~~~~~~~">
+        <location
+            file="src/main/res/drawable-finger/ic_tab_artists.xml"
+            line="17"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_tab_playback&quot; in drawable-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2=" ~~~~~~~~">
+        <location
+            file="src/main/res/drawable-finger/ic_tab_playback.xml"
+            line="17"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;ic_tab_playlists&quot; in drawable-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2=" ~~~~~~~~">
+        <location
+            file="src/main/res/drawable-finger/ic_tab_playlists.xml"
+            line="17"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The layout &quot;notification_expanded&quot; in layout-finger has no declaration in the base `layout` folder; this can lead to crashes when the resource is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-finger/notification_expanded.xml"
+            line="2"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The layout &quot;notification_normal&quot; in layout-finger has no declaration in the base `layout` folder; this can lead to crashes when the resource is queried in a configuration that does not match this qualifier"
+        errorLine1="&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2=" ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-finger/notification_normal.xml"
+            line="2"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;stat_notify_musicplayer&quot; in drawable-hdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-hdpi-finger/stat_notify_musicplayer.png"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The drawable &quot;stat_notify_musicplayer&quot; in drawable-mdpi-finger has no declaration in the base `drawable` folder or in a `drawable-`*density*`dpi` folder; this can lead to crashes when the drawable is queried in a configuration that does not match this qualifier">
+        <location
+            file="src/main/res/drawable-mdpi-finger/stat_notify_musicplayer.png"/>
+    </issue>
+
+</issues>
