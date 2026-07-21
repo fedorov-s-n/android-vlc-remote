@@ -184,6 +184,9 @@ public final class MediaServer {
             URL url = new URL(spec);
             HttpURLConnection http = (HttpURLConnection) url.openConnection();
             http.setConnectTimeout(TIMEOUT);
+            // Without a read timeout a server that connects but stalls mid-response hangs the
+            // status/playlist/browse request forever (BitmapContentHandler already sets both).
+            http.setReadTimeout(TIMEOUT);
             try {
                 String usernamePassword = mUri.getUserInfo();
                 if (usernamePassword != null) {
