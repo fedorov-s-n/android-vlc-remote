@@ -122,6 +122,13 @@ def _clen(u: str) -> int:
     return int(m.group(1)) if m else 0
 
 
+def _is_http_url(u: str) -> bool:
+    try:
+        return urllib.parse.urlparse(u or "").scheme in ALLOWED_SCHEMES
+    except Exception:
+        return False
+
+
 def _job_id(v: str, a: str) -> str:
     return hashlib.sha1((v + "|" + a).encode("utf-8")).hexdigest()[:16]
 
@@ -140,6 +147,11 @@ def _resolve_jid(pathlike: str) -> str:
 
 def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = "", duration: int = 0):
     """Returns (path, error). error is a string if the job could not be started."""
+    # Only allow http/https as ffmpeg inputs. Without this, an attacker on the network could
+    # pass file:/concat:/pipe: URLs and turn ffmpeg into a local-file-read / SSRF primitive
+    # whose output lands in a predictable temp path (probeable via /exists).
+    if not _is_http_url(v) or not _is_http_url(a):
+        return None, "invalid stream url (http/https only)"
     jid = _job_id(v, a)
     with _mux_lock:
         job = _mux_jobs.get(jid)
@@ -169,7 +181,10 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
         if album:
             cmd += ["-metadata", "album=" + album]
         cmd += ["-f", "mpegts", path]
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except FileNotFoundError:
+            return None, "ffmpeg not found on host"
         _mux_jobs[jid] = {"path": path, "proc": proc,
                           "total": _clen(v) + _clen(a), "start": time.time(),
                           "dur": duration}
