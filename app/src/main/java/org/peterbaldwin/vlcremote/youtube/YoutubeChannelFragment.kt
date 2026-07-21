@@ -128,7 +128,7 @@ class YoutubeChannelFragment : Fragment() {
                     videoAdapter.setItems(sortByDate(videoItems))
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: channel load more failed", e)
                 withContext(Dispatchers.Main) { if (isAdded) videosLoading = false }
             }
         }

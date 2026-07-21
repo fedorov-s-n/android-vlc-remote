@@ -16,20 +16,27 @@ import android.widget.Toast
 object ErrorLog {
     private const val MAX = 1000
 
-    data class Entry(val timeMillis: Long, val message: String, val detail: String?)
+    data class Entry(val timeMillis: Long, val message: String, val detail: String?, val count: Int)
 
     private val entries = ArrayList<Entry>()
     private val main = Handler(Looper.getMainLooper())
 
-    /** Records an error. [throwable]'s stacktrace (if any) is kept as the entry detail. */
+    /** Records an error. [throwable]'s stacktrace (if any) is kept as the entry detail. Repeated
+     *  identical errors (same message + stacktrace) collapse into the last entry with a count, so
+     *  a spamming failure (e.g. a per-second status poll while the server is down) can't flood it. */
     @JvmStatic
     @JvmOverloads
     fun log(message: String?, throwable: Throwable? = null) {
         val msg = message?.takeIf { it.isNotBlank() } ?: throwable?.message ?: "Error"
         val detail = throwable?.let { Log.getStackTraceString(it) }
         synchronized(entries) {
-            entries.add(Entry(System.currentTimeMillis(), msg, detail))
-            while (entries.size > MAX) entries.removeAt(0)
+            val last = entries.lastOrNull()
+            if (last != null && last.message == msg && last.detail == detail) {
+                entries[entries.size - 1] = last.copy(timeMillis = System.currentTimeMillis(), count = last.count + 1)
+            } else {
+                entries.add(Entry(System.currentTimeMillis(), msg, detail, 1))
+                while (entries.size > MAX) entries.removeAt(0)
+            }
         }
         Log.w("VlcRemote", msg, throwable)
     }

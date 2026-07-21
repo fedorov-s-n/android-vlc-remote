@@ -89,7 +89,8 @@ object MuxClient {
             val text = stream?.let { BufferedReader(InputStreamReader(it, "UTF-8")).readText() }
             if (code in 200..299) text else null
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Endpoint only (drop the query, which carries long stream URLs).
+            org.peterbaldwin.vlcremote.model.ErrorLog.log("Helper request failed: " + urlStr.substringBefore('?'), e)
             null
         } finally {
             conn?.disconnect()

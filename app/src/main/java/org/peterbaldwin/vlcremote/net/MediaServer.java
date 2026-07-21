@@ -166,6 +166,8 @@ public final class MediaServer {
                 return Remote.data(data);
             } catch (Throwable t) {
                 Log.e(TAG, "Unable to load: " + spec, t);
+                // Path only (no authority) so the log never carries the server password.
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("VLC request failed: " + mUri.getPath(), t);
                 return Remote.error(t);
             }
         }

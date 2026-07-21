@@ -99,7 +99,7 @@ object YoutubePlayback {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: play failed", e)
             }
         }
     }

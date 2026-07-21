@@ -173,7 +173,7 @@ class YoutubeSearchFragment : Fragment() {
                     isLoading = false
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: search more failed", e)
                 withContext(Dispatchers.Main) {
                     if (!isAdded) return@withContext
                     isLoading = false

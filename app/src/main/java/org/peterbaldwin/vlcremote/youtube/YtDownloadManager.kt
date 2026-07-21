@@ -180,7 +180,11 @@ object YtDownloadManager {
                     ?: v.qualities.firstOrNull { it.label.startsWith("1080") }
                     ?: v.qualities.firstOrNull()
                 val audio = v.audioUrl
-                if (q == null || audio == null) { statusText = "No playable stream"; return@withContext }
+                if (q == null || audio == null) {
+                    statusText = "No playable stream"
+                    ErrorLog.log("YouTube: no playable stream for queue item")
+                    return@withContext
+                }
                 val titleQ = if (q.label.isNotBlank()) "${v.title} [${q.label}]" else v.title
                 if (HelperConfig.isUsable(ctx, auth)) {
                     beginDownload(ctx, q.url, audio, v.durationSec, titleQ, v.uploader, pl, auth, null, null)
@@ -243,6 +247,7 @@ object YtDownloadManager {
             withContext(Dispatchers.Main) {
                 if (key == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"
+                    ErrorLog.log("YouTube: helper did not start the download (helper/ffmpeg?)")
                     return@withContext
                 }
                 jobKey = key
@@ -393,6 +398,7 @@ object YtDownloadManager {
                     else -> {  // ERROR / UNKNOWN / network blip
                         if (st.state == "ERROR" || st.state == "UNKNOWN") {
                             statusText = "Download failed"
+                            ErrorLog.log("YouTube: helper reported download " + st.state + " for " + id)
                             jobKey = null
                             reschedule = false
                         }

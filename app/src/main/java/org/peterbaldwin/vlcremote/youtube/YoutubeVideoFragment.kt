@@ -143,7 +143,7 @@ class YoutubeVideoFragment : Fragment() {
                     commentsLoading = false
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: comments load failed", e)
                 withContext(Dispatchers.Main) { if (isAdded) commentsLoading = false }
             }
         }
@@ -160,7 +160,7 @@ class YoutubeVideoFragment : Fragment() {
                     commentsAdapter.insertReplies(position, replies.items)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: load replies failed", e)
             }
         }
     }
@@ -178,7 +178,7 @@ class YoutubeVideoFragment : Fragment() {
                     commentsLoading = false
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                org.peterbaldwin.vlcremote.model.ErrorLog.log("YouTube: comments load failed", e)
                 withContext(Dispatchers.Main) { if (isAdded) commentsLoading = false }
             }
         }

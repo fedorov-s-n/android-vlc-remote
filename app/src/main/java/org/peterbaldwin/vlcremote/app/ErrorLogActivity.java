@@ -99,6 +99,9 @@ public class ErrorLogActivity extends Activity {
             CharSequence time = DateFormat.format("yyyy-MM-dd HH:mm:ss", e.getTimeMillis());
             StringBuilder sb = new StringBuilder();
             sb.append(time).append("  ").append(e.getMessage());
+            if (e.getCount() > 1) {
+                sb.append("  (×").append(e.getCount()).append(')');
+            }
             if (e.getDetail() != null && !e.getDetail().isEmpty()) {
                 sb.append('\n').append(e.getDetail());
             }
