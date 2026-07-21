@@ -6,8 +6,8 @@ import android.webkit.CookieManager
 import android.webkit.WebStorage
 import com.falcofemoralis.hdrezkaapp.utils.CookieStorage
 import com.falcofemoralis.hdrezkaapp.utils.FileManager
-import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 object UserData {
     private const val USER_FILE: String = "user"

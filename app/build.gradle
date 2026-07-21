@@ -119,23 +119,16 @@ dependencies {
     implementation "com.github.bumptech.glide:glide:4.14.2"
     implementation "jp.wasabeef:glide-transformations:4.3.0"
 
-    // Video playback
-    implementation "com.google.android.exoplayer:exoplayer:2.15.1"
-    implementation "com.google.android.exoplayer:extension-leanback:2.15.1"
-
     // JSON
     implementation "com.google.code.gson:gson:2.10.1"
-    implementation "com.google.guava:guava:31.1-android"
 
     // Voice search
     implementation "com.algolia.instantsearch:voice:1.1.0"
 
     // UI widgets
-    implementation "com.github.chivorns:smartmaterialspinner:1.5.0"
     implementation "com.github.ome450901:SimpleRatingBar:1.5.1"
     implementation "io.github.nikartm:image-support:2.0.0"
     // ExpandableLayout (AAkira, deprecated & unpublished) vendored under com.github.aakira.expandablelayout
-    implementation "de.hdodenhof:circleimageview:3.1.0"
     implementation "com.jsibbold:zoomage:1.3.1"
 
     // Scalable size units used by hdrezka layouts (@dimen/_Nssp, @dimen/_Nsdp)
