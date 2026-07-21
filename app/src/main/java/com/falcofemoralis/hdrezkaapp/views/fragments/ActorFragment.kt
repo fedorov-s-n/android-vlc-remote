@@ -55,8 +55,11 @@ class ActorFragment : Fragment(), ActorView {
 
     override fun setBaseInfo(actor: Actor) {
         try {
-            currentView.findViewById<TextView>(R.id.fragment_actor_films_tv_name).text = actor.name
-            currentView.findViewById<TextView>(R.id.fragment_actor_films_tv_name_orig).text = actor.nameOrig
+            // Prefer the original (English/Latin) name; show the Russian one as the secondary line.
+            val engName = actor.nameOrig?.takeIf { it.isNotBlank() }
+            currentView.findViewById<TextView>(R.id.fragment_actor_films_tv_name).text = engName ?: actor.name
+            currentView.findViewById<TextView>(R.id.fragment_actor_films_tv_name_orig).text =
+                if (engName != null) actor.name else ""
 
             val photoView = currentView.findViewById<ImageView>(R.id.fragment_actor_films_iv_photo)
             Picasso.get().load(actor.photo).into(photoView)

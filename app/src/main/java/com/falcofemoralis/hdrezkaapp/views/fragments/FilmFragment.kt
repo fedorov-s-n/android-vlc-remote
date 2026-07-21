@@ -466,10 +466,13 @@ class FilmFragment : Fragment(), FilmView {
 
         Picasso.get().load(film.posterPath).into(currentView.findViewById<ImageView>(R.id.fragment_film_iv_poster))
 
-        currentView.findViewById<TextView>(R.id.fragment_film_tv_title).text = film.title
+        // Both title variants come back in the film response; prefer the original (usually
+        // English/Latin) as the main title and show the Russian one underneath (fallback).
+        val engTitle = film.origTitle?.takeIf { it.isNotBlank() }
+        currentView.findViewById<TextView>(R.id.fragment_film_tv_title).text = engTitle ?: film.title
         val origTileView = currentView.findViewById<TextView>(R.id.fragment_film_tv_origtitle)
-        if (!film.origTitle.isNullOrEmpty()) {
-            origTileView.text = film.origTitle
+        if (engTitle != null && !film.title.isNullOrEmpty()) {
+            origTileView.text = film.title
         } else {
             origTileView.visibility = View.GONE
         }
