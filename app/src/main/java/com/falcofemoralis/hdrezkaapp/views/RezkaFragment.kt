@@ -36,6 +36,8 @@ class RezkaFragment : Fragment(), HdrezkaHost {
     private var currentFragment: Fragment? = null
     private var isSettingsOpened = false
     private var initialized = false
+    private var backStackCallback: (() -> Unit)? = null
+    private var backStackListenerRegistered = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         rootView = inflater.inflate(R.layout.fragment_rezka, container, false)
@@ -243,8 +245,13 @@ class RezkaFragment : Fragment(), HdrezkaHost {
             Action.POP_BACK_STACK -> fm.popBackStack()
         }
 
-        fm.addOnBackStackChangedListener {
-            callback?.invoke()
+        // Register the back-stack listener exactly once (previously a new listener was added on
+        // every navigation and never removed, so the callback fired N times after N navigations).
+        // A single listener invokes whichever callback the latest interaction supplied.
+        backStackCallback = callback
+        if (!backStackListenerRegistered) {
+            backStackListenerRegistered = true
+            fm.addOnBackStackChangedListener { backStackCallback?.invoke() }
         }
     }
 
