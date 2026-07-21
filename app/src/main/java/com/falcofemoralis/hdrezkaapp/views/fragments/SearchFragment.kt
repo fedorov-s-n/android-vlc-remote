@@ -46,9 +46,12 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
     private lateinit var clearBtn: ImageView
     private lateinit var voiceBtn: ImageView
 
-    private val SEARCH_DELAY_MS: Int = 400
-    private var searchDelayTimeMs: Int = 0
-    private var isSearching: Boolean = false
+    private val SEARCH_DELAY_MS: Long = 400
+    private val searchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var pendingQuery = ""
+    private val searchRunnable = Runnable {
+        if (isAdded && ::searchPresenter.isInitialized) searchPresenter.setQuery(pendingQuery)
+    }
 
     enum class Tag {
         Voice,
@@ -100,6 +103,7 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
     }
 
     override fun onDestroyView() {
+        searchHandler.removeCallbacks(searchRunnable)
         if (::searchPresenter.isInitialized) searchPresenter.destroy()
         super.onDestroyView()
     }
@@ -161,29 +165,16 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 if (!autoCompleteTextView.isPerformingCompletion) {
                     if (s.toString().isNotBlank()) {
-                        if(!isSearching) {
-                            isSearching = true
-                            GlobalScope.launch {
-                                while (searchDelayTimeMs < SEARCH_DELAY_MS){
-                                    Thread.sleep(1)
-                                    searchDelayTimeMs++
-                                }
-
-                                withContext(Dispatchers.Main){
-                                    searchPresenter.setQuery(s.toString())
-                                }
-
-                                isSearching = false
-                                searchDelayTimeMs = 0
-                            }
-                        } else{
-                            searchDelayTimeMs = 0
-                        }
+                        // Debounce: run the search SEARCH_DELAY_MS after the last keystroke.
+                        pendingQuery = s.toString()
+                        searchHandler.removeCallbacks(searchRunnable)
+                        searchHandler.postDelayed(searchRunnable, SEARCH_DELAY_MS)
 
                         clearBtn.visibility = View.VISIBLE
                         hintLayout.visibility = View.GONE
                     } else {
                         // Empty or whitespace-only: show the history (recently opened films).
+                        searchHandler.removeCallbacks(searchRunnable)
                         clearBtn.visibility = if (s.toString().isEmpty()) View.GONE else View.VISIBLE
                         showRecent()
                     }
