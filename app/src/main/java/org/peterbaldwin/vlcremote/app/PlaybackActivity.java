@@ -40,7 +40,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.SearchView;
@@ -165,7 +164,6 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_PROGRESS);
         setContentView(R.layout.main);
         
         // Set the control stream to STREAM_MUSIC to suppress system beeps

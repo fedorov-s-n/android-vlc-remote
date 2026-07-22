@@ -35,7 +35,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -298,16 +297,9 @@ public class PlaylistFragment extends MediaListFragment implements SearchView.On
 
     @Override
     public void onProgress(final int progress) {
-        if(getActivity() != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if(getActivity() != null) {
-                        getActivity().getWindow().setFeatureInt(Window.FEATURE_PROGRESS, progress);
-                    }
-                }
-            });
-        }
+        // The old window-title progress bar (Window.FEATURE_PROGRESS) has been a no-op since
+        // API 21, so this callback no longer drives any UI. Loading feedback comes from the
+        // list's empty view ("Loading…", set in onCreateLoader). Kept as an interface stub.
     }
 
     @Override
