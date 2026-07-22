@@ -90,6 +90,10 @@ public final class PickServerFragment extends PreferenceFragment implements Port
     private static final int CONTEXT_FORGET = Menu.FIRST;
     private static final int CONTEXT_EDIT_SERVER = 2;
 
+    private static final int REQUEST_READ_PHONE_STATE = 42;
+
+    private CheckBoxPreference mPreferencePauseForCall;
+
     private BroadcastReceiver mReceiver;
     
     private int mPort;
@@ -127,6 +131,7 @@ public final class PickServerFragment extends PreferenceFragment implements Port
         mPreferenceButtonFifth = (ListPreference) preferenceScreen.findPreference(Preferences.KEY_BUTTON_FIFTH);
         mProgressCategory = (ProgressCategory) preferenceScreen.findPreference(KEY_SERVERS);
         CheckBoxPreference preferencePauseForCall = (CheckBoxPreference) preferenceScreen.findPreference(KEY_PAUSE_FOR_CALL);
+        mPreferencePauseForCall = preferencePauseForCall;
         EditTextPreference  preferenceSeekTime = (EditTextPreference) preferenceScreen.findPreference(Preferences.KEY_SEEK_TIME);
         EditTextPreference  preferenceAudioDelay = (EditTextPreference) preferenceScreen.findPreference(Preferences.KEY_AUDIO_DELAY);
         EditTextPreference  preferenceSubtitleDelay = (EditTextPreference) preferenceScreen.findPreference(Preferences.KEY_SUBTITLE_DELAY);
@@ -503,6 +508,24 @@ public final class PickServerFragment extends PreferenceFragment implements Port
         }
     }
     
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQUEST_READ_PHONE_STATE) {
+            boolean granted = grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (!granted) {
+                // Without the permission the receiver can't work, so reflect that: disable it and
+                // uncheck the box instead of leaving a toggle that does nothing.
+                setPauseForCall(false);
+                if (mPreferencePauseForCall != null) {
+                    mPreferencePauseForCall.setChecked(false);
+                }
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
     private boolean getPauseForCall() {
         switch (getActivity().getPackageManager().getComponentEnabledSetting(PHONE_STATE_RECEIVER)) {
             case PackageManager.COMPONENT_ENABLED_STATE_DEFAULT:
@@ -519,6 +542,14 @@ public final class PickServerFragment extends PreferenceFragment implements Port
                 enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                         : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP);
+        // The receiver is inert without READ_PHONE_STATE, a runtime-granted permission on API 23+.
+        // Ask for it when the user turns the feature on, otherwise pause-on-call silently never fires.
+        if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M
+                && getActivity().checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE)
+                        != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.READ_PHONE_STATE},
+                    REQUEST_READ_PHONE_STATE);
+        }
     }
     
     private class MyBroadcastReceiver extends BroadcastReceiver {
