@@ -37,18 +37,6 @@ object WebViewHttp {
     @Volatile
     var enabled: Boolean = false
 
-    // Counts down once the mirror origin has finished loading at least once (so cf_clearance is set
-    // and same-origin fetch() is valid). Reset on each attach; execute() waits on it briefly.
-    @Volatile
-    private var warmLatch = CountDownLatch(1)
-
-    private const val WARMUP_WAIT_SEC = 25L
-
-    /** Called by the host once the origin page finishes loading. Idempotent. */
-    fun markReady() {
-        warmLatch.countDown()
-    }
-
     private class Holder {
         val latch = CountDownLatch(1)
         @Volatile var status = -1
@@ -59,7 +47,6 @@ object WebViewHttp {
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "AddJavascriptInterface")
     fun attach(webView: WebView) {
         this.webView = webView
-        warmLatch = CountDownLatch(1)  // this origin hasn't loaded yet
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.addJavascriptInterface(Bridge(), "AndroidHttpBridge")
@@ -88,10 +75,6 @@ object WebViewHttp {
         rawBody: String?
     ): Result {
         webView ?: throw IOException("WebView not available")
-        // Wait until the origin has loaded once (cf_clearance set); otherwise an early search fires
-        // a same-origin fetch against an unloaded origin and fails spuriously. Best-effort: proceed
-        // after the timeout rather than blocking the request forever if warmup never completes.
-        if (warmLatch.count > 0) warmLatch.await(WARMUP_WAIT_SEC, TimeUnit.SECONDS)
         val id = idGen.incrementAndGet()
         val holder = Holder()
         pending[id] = holder
