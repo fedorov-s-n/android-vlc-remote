@@ -336,7 +336,6 @@
         <receiver android:name=".MediaAppWidgetProvider" android:exported="false" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
                 <action android:name="org.peterbaldwin.vlcremote.intent.action.MANUAL_APPWIDGET_UPDATE" />
             </intent-filter>
 

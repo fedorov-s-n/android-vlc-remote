@@ -29,7 +29,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.ConnectivityManager;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -51,8 +50,7 @@ public class MediaAppWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
-        if (Intents.ACTION_MANUAL_APPWIDGET_UPDATE.equals(action)
-         || ConnectivityManager.CONNECTIVITY_ACTION.equals(action)) {
+        if (Intents.ACTION_MANUAL_APPWIDGET_UPDATE.equals(action)) {
             update(context);
         } else {
             super.onReceive(context, intent);
