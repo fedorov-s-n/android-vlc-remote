@@ -717,6 +717,11 @@ public class PlaybackActivity extends FragmentActivity implements TabHost.OnTabC
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         int c = event.getUnicodeChar();
+        // No server selected yet (picker open / server cleared): every branch below dereferences
+        // mMediaServer, so bail to the default handler instead of NPE-crashing on a volume/media key.
+        if (mMediaServer == null) {
+            return super.onKeyDown(keyCode, event);
+        }
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             if (mVolumeLevel != VOLUME_LEVEL_UNKNOWN) {
                 setVolume(mVolumeLevel + 20);
