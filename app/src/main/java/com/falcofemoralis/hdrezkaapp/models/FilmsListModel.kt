@@ -43,7 +43,7 @@ object FilmsListModel {
             film.ratingKP = el.select("i.b-category-bestrating").text()
 
             val catEl = el.select("span.cat")
-            film.type = catEl.select("i.entity")[0].ownText()
+            film.type = FilmModel.getTypeByName(catEl.select("i.entity")[0].ownText())
             film.constFilmType =
                 if (catEl.hasClass("films")) FilmType.FILM
                 else if (catEl.hasClass("series")) FilmType.SERIES

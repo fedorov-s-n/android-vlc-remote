@@ -220,8 +220,8 @@ class SearchFragment : Fragment(), SearchView, FilmListCallView {
         getPermissionDialog()?.dismiss()
         (getVoiceDialog() ?: VoiceInputDialogFragmentOverride()).let {
             it.setSuggestions(
-                "Терминатор",
-                "Аватар"
+                "Terminator",
+                "Avatar"
             )
             it.show(parentFragmentManager, Tag.Voice.name)
         }

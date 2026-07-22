@@ -122,12 +122,15 @@ object FilmModel {
         return film
     }
 
+    // Maps both the URL segment (series/cartoons/films/animation) and the site's Russian entity
+    // label (сериал/мультфильм/фильм/аниме) to an English label, so the (now English) UI doesn't
+    // show Russian. Unknown values fall through unchanged.
     fun getTypeByName(name: String): String {
-        return when (name) {
-            "series" -> "Сериал"
-            "cartoons" -> "Мультфильм"
-            "films" -> "Фильм"
-            "animation" -> "Аниме"
+        return when (name.trim().lowercase()) {
+            "series", "сериал", "сериалы" -> "Series"
+            "cartoons", "мультфильм", "мультфильмы" -> "Cartoon"
+            "films", "film", "фильм", "фильмы" -> "Film"
+            "animation", "аниме" -> "Anime"
             else -> name
         }
     }
