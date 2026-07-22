@@ -264,10 +264,17 @@ def _cleanup_old_files():
         names = os.listdir(tmp)
     except OSError:
         return
+    # Files still referenced by a known job (running or finished-but-retained) may be what VLC is
+    # playing right now — a long movie or one left paused past the TTL. Never TTL-delete those; the
+    # job-prune loop below removes them only once the job is gone and the file is unreferenced.
+    with _mux_lock:
+        live_paths = {os.path.abspath(j["path"]) for j in _mux_jobs.values()}
     for name in names:
         if not (name.startswith("dl_") or name.startswith("mux_") or name.startswith("up_")):
             continue
         p = os.path.join(tmp, name)
+        if os.path.abspath(p) in live_paths:
+            continue
         try:
             if now - os.path.getmtime(p) > FILE_TTL_SEC:
                 os.remove(p)
