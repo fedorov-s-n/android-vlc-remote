@@ -83,13 +83,6 @@
             android:hint="@string/label_helper_pass"
             android:inputType="textPassword"
             android:singleLine="true" />
-
-        <Button
-            android:id="@+id/edit_helper_test"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dip"
-            android:text="@string/helper_test" />
     </LinearLayout>
 
 </ScrollView>

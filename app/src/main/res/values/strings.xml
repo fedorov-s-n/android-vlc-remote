@@ -39,10 +39,11 @@
     <string name="label_helper_port">Helper port (default: 3900)</string>
     <string name="label_helper_user">Helper username (optional)</string>
     <string name="label_helper_pass">Helper password (optional)</string>
-    <string name="helper_test">Test helper</string>
-    <string name="helper_ok">Helper connection successful</string>
-    <string name="helper_unauthorized">Helper: wrong username/password</string>
-    <string name="helper_error">Helper unreachable</string>
+    <string name="helper_ok">Connection successful</string>
+    <string name="helper_unauthorized">Wrong username/password</string>
+    <string name="helper_error">Unreachable</string>
+    <!-- Combined VLC + helper test result (single toast). %1$s = VLC line, %2$s = helper line. -->
+    <string name="test_result_combined">VLC: %1$s\nHelper: %2$s</string>
     <string name="helper_no_server">Select a VLC server first</string>
     <string name="helper_needed_for_file">Enable the playback helper for this server to open files</string>
     <string name="button_default_value">default</string>

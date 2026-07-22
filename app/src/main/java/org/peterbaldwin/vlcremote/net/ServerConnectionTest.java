@@ -17,8 +17,6 @@
 package org.peterbaldwin.vlcremote.net;
 
 import android.content.Context;
-import android.os.AsyncTask;
-import android.widget.Toast;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -30,62 +28,53 @@ import org.peterbaldwin.client.android.vlcremote.R;
 import org.peterbaldwin.vlcremote.model.Server;
 
 /**
+ * Reachability + credentials probe for a VLC server. Call {@link #probe} off the main thread
+ * and turn its result into a one-line message with {@link #describe}.
  *
  * @author Sam Malone
  */
-public class ServerConnectionTest extends AsyncTask<Server, Void, Integer> {
-    
+public final class ServerConnectionTest {
+
     private final static String TEST_PATH = "/requests/status.xml";
 
-    private Context context;
-    
-    public ServerConnectionTest(Context context) {
-        // Application context: the task outlives the dialog/activity, so holding the Activity here
-        // would leak it (and the toast works fine with the app context).
-        this.context = context.getApplicationContext();
+    private ServerConnectionTest() {
     }
 
-    @Override
-    protected Integer doInBackground(Server... servers) {
-        if(servers == null || servers.length != 1) {
+    /** Blocking reachability + auth check. Returns the HTTP status code, or -1 on I/O failure. */
+    public static int probe(Server server) {
+        if (server == null) {
             return -1;
         }
-        URL url;
         try {
-            url = new URL("http://" + servers[0].getUri().getAuthority() + TEST_PATH);
+            URL url = new URL("http://" + server.getUri().getAuthority() + TEST_PATH);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(1000);
             // Without a read timeout, a server that accepts the socket but never responds hangs
-            // this task forever.
+            // this call forever.
             connection.setReadTimeout(2000);
             try {
-                Header auth = BasicScheme.authenticate(new UsernamePasswordCredentials(servers[0].getUser(), servers[0].getPassword()), HTTP.UTF_8, false);
+                Header auth = BasicScheme.authenticate(new UsernamePasswordCredentials(server.getUser(), server.getPassword()), HTTP.UTF_8, false);
                 connection.setRequestProperty(auth.getName(), auth.getValue());
                 return connection.getResponseCode();
             } finally {
                 connection.disconnect();
             }
         } catch (IOException ex) {
-            
+            return -1;
         }
-        return -1;
     }
 
-    @Override
-    protected void onPostExecute(Integer result) {
-        switch(result) {
+    /** One-line, human-readable result for a {@link #probe} status code. */
+    public static String describe(Context context, int result) {
+        switch (result) {
             case HttpURLConnection.HTTP_UNAUTHORIZED:
-                Toast.makeText(context, R.string.server_unauthorized, Toast.LENGTH_SHORT).show();
-                break;
+                return context.getString(R.string.server_unauthorized);
             case HttpURLConnection.HTTP_FORBIDDEN:
-                Toast.makeText(context, R.string.server_forbidden, Toast.LENGTH_SHORT).show();
-                break;
+                return context.getString(R.string.server_forbidden);
             case HttpURLConnection.HTTP_OK:
-                Toast.makeText(context, R.string.server_ok, Toast.LENGTH_SHORT).show();
-                break;
+                return context.getString(R.string.server_ok);
             default:
-                org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, context.getString(R.string.server_error), null);
+                return context.getString(R.string.server_error);
         }
     }
-    
 }

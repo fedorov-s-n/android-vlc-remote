@@ -20,14 +20,19 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 import org.peterbaldwin.client.android.vlcremote.R;
+import org.peterbaldwin.vlcremote.model.HelperConfig;
 import org.peterbaldwin.vlcremote.model.Server;
+import org.peterbaldwin.vlcremote.net.HelperConnectionTest;
 import org.peterbaldwin.vlcremote.net.ServerConnectionTest;
 
 /**
@@ -158,9 +163,6 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
         mEditHelperPort = (EditText) view.findViewById(R.id.edit_helper_port);
         mEditHelperUser = (EditText) view.findViewById(R.id.edit_helper_user);
         mEditHelperPass = (EditText) view.findViewById(R.id.edit_helper_pass);
-        view.findViewById(R.id.edit_helper_test).setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { onTestHelper(); }
-        });
         mEditHelperEnabled.setChecked(true); // default for a new server
         String currentKey = getArguments().getString("currentKey");
         // Guard against a malformed key so editing never fails to open.
@@ -181,26 +183,6 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
         }
     }
 
-    /** Tests reachability + credentials of this server's helper (from the current dialog input). */
-    private void onTestHelper() {
-        String host = mEditHelperHost.getText().toString().trim();
-        if (host.isEmpty()) {
-            host = mEditHostname.getText().toString().trim(); // default: this server's host
-        }
-        int port;
-        try {
-            String p = mEditHelperPort.getText().toString().trim();
-            port = p.isEmpty() ? org.peterbaldwin.vlcremote.model.HelperConfig.DEFAULT_PORT : Integer.parseInt(p);
-        } catch (NumberFormatException e) {
-            port = org.peterbaldwin.vlcremote.model.HelperConfig.DEFAULT_PORT;
-        }
-        String user = mEditHelperUser.getText().toString().trim();
-        String pass = mEditHelperPass.getText().toString();
-        String auth = (user.isEmpty() && pass.isEmpty()) ? null
-                : "Basic " + android.util.Base64.encodeToString((user + ":" + pass).getBytes(), android.util.Base64.NO_WRAP);
-        new org.peterbaldwin.vlcremote.net.HelperConnectionTest(getActivity(), host, port, auth).execute();
-    }
-
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -211,8 +193,47 @@ public class ServerInfoDialog extends DialogFragment implements View.OnClickList
         }
     }
       
-    public void onTestServer(Server server) {
-        new ServerConnectionTest(getActivity()).execute(server);
+    /**
+     * Tests both the VLC server and its helper (from the current dialog input) and reports both
+     * outcomes in a single toast. The helper params default to this server's host and the default
+     * helper port, matching how the helper is reached at runtime.
+     */
+    public void onTestServer(final Server server) {
+        final Context context = getActivity().getApplicationContext();
+
+        String host = mEditHelperHost.getText().toString().trim();
+        if (host.isEmpty()) {
+            host = mEditHostname.getText().toString().trim(); // default: this server's host
+        }
+        final String helperHost = host;
+        int port;
+        try {
+            String p = mEditHelperPort.getText().toString().trim();
+            port = p.isEmpty() ? HelperConfig.DEFAULT_PORT : Integer.parseInt(p);
+        } catch (NumberFormatException e) {
+            port = HelperConfig.DEFAULT_PORT;
+        }
+        final int helperPort = port;
+        String user = mEditHelperUser.getText().toString().trim();
+        String pass = mEditHelperPass.getText().toString();
+        final String helperAuth = (user.isEmpty() && pass.isEmpty()) ? null
+                : "Basic " + Base64.encodeToString((user + ":" + pass).getBytes(), Base64.NO_WRAP);
+
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                int vlc = ServerConnectionTest.probe(server);
+                int helper = HelperConnectionTest.probe(helperHost, helperPort, helperAuth);
+                return context.getString(R.string.test_result_combined,
+                        ServerConnectionTest.describe(context, vlc),
+                        HelperConnectionTest.describe(context, helper));
+            }
+
+            @Override
+            protected void onPostExecute(String message) {
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            }
+        }.execute();
     }
 
     /**

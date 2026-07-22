@@ -1,34 +1,24 @@
 package org.peterbaldwin.vlcremote.net;
 
 import android.content.Context;
-import android.os.AsyncTask;
-import android.widget.Toast;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import org.peterbaldwin.client.android.vlcremote.R;
 
 /**
- * Tests reachability + credentials of the companion vlc-helper.py, analogous to
- * {@link ServerConnectionTest} for the VLC server. Hits GET /ping (which requires auth when
- * the helper is configured with credentials) and toasts the outcome.
+ * Reachability + credentials probe for the companion vlc-helper.py, analogous to
+ * {@link ServerConnectionTest} for the VLC server. Call {@link #probe} off the main thread
+ * (hits GET /ping, which requires auth when the helper is configured with credentials) and turn
+ * its result into a one-line message with {@link #describe}.
  */
-public class HelperConnectionTest extends AsyncTask<Void, Void, Integer> {
+public final class HelperConnectionTest {
 
-    private final Context context;
-    private final String host;
-    private final int port;
-    private final String authHeader;
-
-    public HelperConnectionTest(Context context, String host, int port, String authHeader) {
-        this.context = context.getApplicationContext();
-        this.host = host;
-        this.port = port;
-        this.authHeader = authHeader;
+    private HelperConnectionTest() {
     }
 
-    @Override
-    protected Integer doInBackground(Void... voids) {
+    /** Blocking reachability + auth check. Returns the HTTP status code, or -1 on I/O failure. */
+    public static int probe(String host, int port, String authHeader) {
         if (host == null || host.trim().isEmpty()) {
             return -1;
         }
@@ -50,17 +40,15 @@ public class HelperConnectionTest extends AsyncTask<Void, Void, Integer> {
         }
     }
 
-    @Override
-    protected void onPostExecute(Integer result) {
+    /** One-line, human-readable result for a {@link #probe} status code. */
+    public static String describe(Context context, int result) {
         switch (result) {
             case HttpURLConnection.HTTP_OK:
-                Toast.makeText(context, R.string.helper_ok, Toast.LENGTH_SHORT).show();
-                break;
+                return context.getString(R.string.helper_ok);
             case HttpURLConnection.HTTP_UNAUTHORIZED:
-                Toast.makeText(context, R.string.helper_unauthorized, Toast.LENGTH_SHORT).show();
-                break;
+                return context.getString(R.string.helper_unauthorized);
             default:
-                Toast.makeText(context, R.string.helper_error, Toast.LENGTH_SHORT).show();
+                return context.getString(R.string.helper_error);
         }
     }
 }
