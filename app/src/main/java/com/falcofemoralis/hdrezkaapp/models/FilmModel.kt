@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets
 
 
 object FilmModel {
+    private const val MAX_FILM_LOAD_ATTEMPTS = 3
     private const val FILM_TITLE = "div.b-post__title h1"
     private const val FILM_POSTER = "div.b-sidecover a"
     private const val FILM_TABLE_INFO = "table.b-post__info tbody tr"
@@ -461,29 +462,39 @@ object FilmModel {
         }
     }
 
-    private fun startFilmLoad(counter: Counter, loadedFilms: Array<Film?>, filmsToLoad: ArrayList<Film>, index: Int, film: Film, callback: (ArrayList<Film>) -> Unit) {
+    private fun startFilmLoad(counter: Counter, loadedFilms: Array<Film?>, filmsToLoad: ArrayList<Film>, index: Int, film: Film, callback: (ArrayList<Film>) -> Unit, attempt: Int = 0) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 loadedFilms[index] = getMainData(film)
-
-                counter.count++
-
-                if (counter.count >= filmsToLoad.size) {
-                    val list: ArrayList<Film> = ArrayList()
-                    for (item in loadedFilms) {
-                        if (item != null) {
-                            list.add(item)
-                        }
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        callback(list)
-                    }
-                }
+                finishOne(counter, loadedFilms, filmsToLoad, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
-                delay(50)
-                startFilmLoad(counter, loadedFilms, filmsToLoad, index, film, callback)
+                if (attempt < MAX_FILM_LOAD_ATTEMPTS) {
+                    // Bounded backoff. The old code retried forever with delay(50), so a down /
+                    // Cloudflare-blocked mirror spun one WebView request per card indefinitely and
+                    // the page callback (gated on counter == size) never fired.
+                    delay(300L * (attempt + 1))
+                    startFilmLoad(counter, loadedFilms, filmsToLoad, index, film, callback, attempt + 1)
+                } else {
+                    // Give up on this card, but still count it (slot stays null) so the page
+                    // completes with whatever loaded instead of hanging on the spinner forever.
+                    finishOne(counter, loadedFilms, filmsToLoad, callback)
+                }
+            }
+        }
+    }
+
+    private suspend fun finishOne(counter: Counter, loadedFilms: Array<Film?>, filmsToLoad: ArrayList<Film>, callback: (ArrayList<Film>) -> Unit) {
+        counter.count++
+        if (counter.count >= filmsToLoad.size) {
+            val list: ArrayList<Film> = ArrayList()
+            for (item in loadedFilms) {
+                if (item != null) {
+                    list.add(item)
+                }
+            }
+            withContext(Dispatchers.Main) {
+                callback(list)
             }
         }
     }
