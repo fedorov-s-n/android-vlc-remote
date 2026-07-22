@@ -55,7 +55,10 @@ object ExceptionHelper {
 
                     }
                     org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, "${context.getString(textId)}: $urlErrorString ${context.getString(R.string.your_url)} ${SettingsData.provider}", null)
-                } else if (type != ErrorType.PROVIDER_TIMEOUT) {
+                } else {
+                    // Includes PROVIDER_TIMEOUT (a 503 / IOException / Cloudflare challenge that
+                    // didn't clear): previously swallowed, which left the user staring at an empty
+                    // list with no explanation. Show the toast so a blocked/slow mirror is visible.
                     org.peterbaldwin.vlcremote.model.ErrorLog.toast(context, context.getString(textId) + ": " + error, null)
                 }
             }
