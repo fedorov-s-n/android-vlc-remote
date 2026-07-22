@@ -176,8 +176,11 @@ def start_mux(v: str, a: str, title: str = "", artist: str = "", album: str = ""
     with _mux_lock:
         job = _mux_jobs.get(jid)
         if job is not None:
-            # Reuse an existing (running or finished) job for the same pair.
-            if job["proc"].poll() is None or os.path.exists(job["path"]):
+            # Reuse an existing job for the same pair only if it's still running or it finished
+            # cleanly (exit 0). A non-zero/killed exit can leave a truncated .ts on disk; don't
+            # hand that back as complete — fall through and restart the mux below.
+            code = job["proc"].poll()
+            if code is None or (code == 0 and os.path.exists(job["path"])):
                 return job["path"], None
         if _active_count() >= MAX_JOBS:
             return None, "busy: %d downloads already running" % MAX_JOBS
