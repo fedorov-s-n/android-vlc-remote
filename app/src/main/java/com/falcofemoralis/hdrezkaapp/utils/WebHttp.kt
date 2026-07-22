@@ -113,7 +113,7 @@ class WebRequest(private val url: String) {
         }
         // Cloudflare sometimes serves an HTTP 200 JS-challenge interstitial instead of the real
         // page (warmup not cleared yet); surface it as a retryable block rather than letting the
-        // caller parse it as "no results". These markers appear only on challenge pages.
+        // caller parse it as "no results".
         if (isCloudflareChallenge(result.body)) {
             throw HttpStatusException("Cloudflare challenge (not cleared)", 503, url)
         }
@@ -130,8 +130,12 @@ class WebRequest(private val url: String) {
         return WebResponse(url, result.body, setCookies)
     }
 
+    // Detect an actual Cloudflare interstitial. Do NOT match "challenge-platform": Cloudflare
+    // injects the /cdn-cgi/challenge-platform/ beacon script into normal, successfully-served
+    // pages too (JS Detections / Bot Fight Mode), so it produced a false positive on every
+    // full-page GET (film cards, list pagination, actor pages) — turning good pages into a
+    // retried 503. These two markers appear only on the real challenge/verification pages.
     private fun isCloudflareChallenge(body: String): Boolean =
-        body.contains("challenge-platform") ||
-        body.contains("cf-browser-verification") ||
-        body.contains("window._cf_chl_opt")
+        body.contains("window._cf_chl_opt") ||
+        body.contains("cf-browser-verification")
 }
