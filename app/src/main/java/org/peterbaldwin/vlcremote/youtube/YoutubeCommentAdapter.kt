@@ -8,7 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.text.HtmlCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
+import com.squareup.picasso.Picasso
 import org.peterbaldwin.client.android.vlcremote.R
 
 class YoutubeCommentAdapter(private val onExpand: (Int) -> Unit) : RecyclerView.Adapter<YoutubeCommentAdapter.VH>() {
@@ -61,7 +61,7 @@ class YoutubeCommentAdapter(private val onExpand: (Int) -> Unit) : RecyclerView.
         }
 
         val url = c.avatarUrl
-        if (url.isNullOrEmpty()) holder.avatar.setImageDrawable(null) else Glide.with(holder.avatar).load(url).into(holder.avatar)
+        if (url.isNullOrEmpty()) holder.avatar.setImageDrawable(null) else Picasso.get().load(url).into(holder.avatar)
 
         // Indent replies.
         val density = holder.itemView.resources.displayMetrics.density

@@ -12,7 +12,7 @@ import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Dispatchers
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -146,8 +146,8 @@ class YoutubeChannelFragment : Fragment() {
         val desc = view.findViewById<TextView>(R.id.youtube_channel_description)
         desc.text = HtmlCompat.fromHtml(ch.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
         desc.movementMethod = android.text.method.LinkMovementMethod.getInstance()
-        ch.bannerUrl?.let { Glide.with(this).load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_banner)) }
-        ch.avatarUrl?.let { Glide.with(this).load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_avatar)) }
+        ch.bannerUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_banner)) }
+        ch.avatarUrl?.let { Picasso.get().load(it).into(view.findViewById<ImageView>(R.id.youtube_channel_avatar)) }
     }
 
     private fun refreshSections(view: View) {

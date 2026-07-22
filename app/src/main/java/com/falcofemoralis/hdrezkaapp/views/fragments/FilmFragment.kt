@@ -56,12 +56,8 @@ import com.falcofemoralis.hdrezkaapp.views.adapters.CommentsRecyclerViewAdapter
 import com.falcofemoralis.hdrezkaapp.views.elements.CommentEditor
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.FilmView
 import com.github.aakira.expandablelayout.ExpandableLinearLayout
-import android.graphics.drawable.Drawable
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
+import com.squareup.picasso.Callback
+import com.squareup.picasso.Picasso
 import com.willy.ratingbar.ScaleRatingBar
 import java.io.File
 
@@ -475,7 +471,7 @@ class FilmFragment : Fragment(), FilmView {
 
         populateSelectors(film)
 
-        Glide.with(this).load(film.posterPath).into(currentView.findViewById<ImageView>(R.id.fragment_film_iv_poster))
+        Picasso.get().load(film.posterPath).into(currentView.findViewById<ImageView>(R.id.fragment_film_iv_poster))
 
         // Both title variants come back in the film response; prefer the original (usually
         // English/Latin) as the main title and show the Russian one underneath (fallback).
@@ -561,18 +557,17 @@ class FilmFragment : Fragment(), FilmView {
 
                     actorProgress.visibility = View.VISIBLE
                     actorLayout.visibility = View.GONE
-                    Glide.with(this).load(actor.photo).listener(object : RequestListener<Drawable> {
-                        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
-                            e?.printStackTrace()
-                            return false
-                        }
-                        override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                    Picasso.get().load(actor.photo).into(actorPhoto, object : Callback {
+                        override fun onSuccess() {
                             actorProgress.visibility = View.GONE
                             actorLayout.visibility = View.VISIBLE
                             actorsLayout.addView(layout, 0)
-                            return false
                         }
-                    }).into(actorPhoto)
+
+                        override fun onError(e: Exception) {
+                            e.printStackTrace()
+                        }
+                    })
                 } else {
                     actorsLayout.addView(layout)
                 }
@@ -652,14 +647,15 @@ class FilmFragment : Fragment(), FilmView {
         if (context != null) {
             val dialog = Dialog(requireActivity())
             val layout: RelativeLayout = layoutInflater.inflate(R.layout.modal_image, null) as RelativeLayout
-            Glide.with(this).load(posterPath).listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean = false
-                override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+            Picasso.get().load(posterPath).into(layout.findViewById(R.id.modal_image), object : Callback {
+                override fun onSuccess() {
                     layout.findViewById<ProgressBar>(R.id.modal_progress).visibility = View.GONE
                     layout.findViewById<ImageView>(R.id.modal_image).visibility = View.VISIBLE
-                    return false
                 }
-            }).into(layout.findViewById<ImageView>(R.id.modal_image))
+
+                override fun onError(e: Exception) {
+                }
+            })
             dialog.window?.requestFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(layout)
 
@@ -799,14 +795,15 @@ class FilmFragment : Fragment(), FilmView {
             infoView.textSize = 12F
 
             val filmPoster: ImageView = layout.findViewById(R.id.film_poster)
-            Glide.with(this).load(film.posterPath).listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean = false
-                override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+            Picasso.get().load(film.posterPath).into(filmPoster, object : Callback {
+                override fun onSuccess() {
                     layout.findViewById<ProgressBar>(R.id.film_loading).visibility = View.GONE
                     layout.findViewById<RelativeLayout>(R.id.film_posterLayout).visibility = View.VISIBLE
-                    return false
                 }
-            }).into(filmPoster)
+
+                override fun onError(e: Exception) {
+                }
+            })
 
             val params = LinearLayout.LayoutParams(
                 UnitsConverter.getPX(requireContext(), 80),

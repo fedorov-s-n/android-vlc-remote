@@ -22,12 +22,8 @@ import com.falcofemoralis.hdrezkaapp.utils.ExceptionHelper
 import com.falcofemoralis.hdrezkaapp.utils.FragmentOpener
 import com.falcofemoralis.hdrezkaapp.views.adapters.FilmsListRecyclerViewAdapter
 import com.falcofemoralis.hdrezkaapp.views.viewsInterface.ActorView
-import android.graphics.drawable.Drawable
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
+import com.squareup.picasso.Callback
+import com.squareup.picasso.Picasso
 
 class ActorFragment : Fragment(), ActorView {
     private val ACTOR_ARG = "actor"
@@ -71,7 +67,7 @@ class ActorFragment : Fragment(), ActorView {
                 if (engName != null) actor.name else ""
 
             val photoView = currentView.findViewById<ImageView>(R.id.fragment_actor_films_iv_photo)
-            Glide.with(this).load(actor.photo).into(photoView)
+            Picasso.get().load(actor.photo).into(photoView)
             actor.photo?.let { setFullSizeImage(it) }
             photoView.setOnClickListener { openFullSizeImage() }
 
@@ -143,14 +139,15 @@ class ActorFragment : Fragment(), ActorView {
         if (context != null) {
             val dialog = Dialog(requireActivity())
             val layout: RelativeLayout = layoutInflater.inflate(R.layout.modal_image, null) as RelativeLayout
-            Glide.with(this).load(photoPath).listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean = false
-                override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+            Picasso.get().load(photoPath).into(layout.findViewById(R.id.modal_image), object : Callback {
+                override fun onSuccess() {
                     layout.findViewById<ProgressBar>(R.id.modal_progress).visibility = View.GONE
                     layout.findViewById<ImageView>(R.id.modal_image).visibility = View.VISIBLE
-                    return false
                 }
-            }).into(layout.findViewById<ImageView>(R.id.modal_image))
+
+                override fun onError(e: Exception) {
+                }
+            })
             dialog.window?.requestFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(layout)
 
