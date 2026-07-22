@@ -40,7 +40,9 @@ public class ServerConnectionTest extends AsyncTask<Server, Void, Integer> {
     private Context context;
     
     public ServerConnectionTest(Context context) {
-        this.context = context;
+        // Application context: the task outlives the dialog/activity, so holding the Activity here
+        // would leak it (and the toast works fine with the app context).
+        this.context = context.getApplicationContext();
     }
 
     @Override
@@ -53,6 +55,9 @@ public class ServerConnectionTest extends AsyncTask<Server, Void, Integer> {
             url = new URL("http://" + servers[0].getUri().getAuthority() + TEST_PATH);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(1000);
+            // Without a read timeout, a server that accepts the socket but never responds hangs
+            // this task forever.
+            connection.setReadTimeout(2000);
             try {
                 Header auth = BasicScheme.authenticate(new UsernamePasswordCredentials(servers[0].getUser(), servers[0].getPassword()), HTTP.UTF_8, false);
                 connection.setRequestProperty(auth.getName(), auth.getValue());
