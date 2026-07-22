@@ -23,7 +23,7 @@
         style="?android:attr/listSeparatorTextViewStyle"
         android:background="@null"
         android:paddingLeft="0dip"
-        android:id="@+android:id/title"
+        android:id="@android:id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"

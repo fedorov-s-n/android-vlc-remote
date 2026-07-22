@@ -2,17 +2,6 @@
 <issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.2)" variant="fatal" version="8.13.2">
 
     <issue
-        id="InvalidId"
-        message="Invalid id; ID definitions **must** be of the form `@+id/name`; did you mean `@+id/title`?"
-        errorLine1="        android:id=&quot;@+android:id/title&quot;"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/preference_progress_category.xml"
-            line="26"
-            column="9"/>
-    </issue>
-
-    <issue
         id="MissingDefaultResource"
         message="The layout &quot;album_appwidget&quot; in layout-finger has no declaration in the base `layout` folder; this can lead to crashes when the resource is queried in a configuration that does not match this qualifier"
         errorLine1="&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
