@@ -45,7 +45,9 @@ public class JsonStatusContentHandler extends JsonContentHandler<Status> {
     
     private boolean parseBoolean(JsonToken token) throws IOException {
         if(JsonToken.NUMBER.equals(token)) {
-            return reader.nextInt() == 0;
+            // A numeric flag is false only when it is 0 (matches the XML handler); the previous
+            // "== 0" inverted random/loop/repeat/fullscreen when VLC reported them as numbers.
+            return reader.nextInt() != 0;
         }
         return reader.nextBoolean();
     }
