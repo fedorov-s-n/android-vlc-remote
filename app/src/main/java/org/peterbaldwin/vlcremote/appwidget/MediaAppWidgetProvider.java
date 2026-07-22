@@ -106,7 +106,12 @@ public class MediaAppWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        context.startService(Intents.service(context, Intents.ACTION_PROGRAMMATIC_APPWIDGET_UPDATE));
+        try {
+            context.startService(Intents.service(context, Intents.ACTION_PROGRAMMATIC_APPWIDGET_UPDATE));
+        } catch (IllegalStateException e) {
+            // Android 8+ blocks starting this background service while the app is in the background;
+            // the widget refreshes on the next foreground status poll instead of crashing here.
+        }
     }
 
     private void update(Context context) {

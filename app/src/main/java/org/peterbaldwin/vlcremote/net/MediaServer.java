@@ -149,7 +149,16 @@ public final class MediaServer {
 
         protected final void start(Intent intent) {
             if (mDelay == 0L) {
-                mContext.startService(intent);
+                try {
+                    mContext.startService(intent);
+                } catch (IllegalStateException e) {
+                    // Android 8+ forbids starting this background service from the background
+                    // (e.g. the phone-state receiver, or a widget/alarm refresh). Fire the
+                    // request's HTTP directly on a worker thread so the command still reaches VLC;
+                    // the status broadcast / widget refresh the service would have produced is
+                    // skipped here (a foreground poll refreshes the UI next time).
+                    fireDirect(intent.getData());
+                }
             } else {
                 Object service = mContext.getSystemService(Context.ALARM_SERVICE);
                 AlarmManager manager = (AlarmManager) service;
@@ -162,6 +171,39 @@ public final class MediaServer {
 
         protected final void execute(String encodedQuery) {
             start(intent(encodedQuery));
+        }
+
+        /** Runs the request URL directly off the main thread (fire-and-forget), used as the
+         *  fallback when the background service can't be started on Android 8+. */
+        private void fireDirect(final Uri data) {
+            if (data == null) {
+                return;
+            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    HttpURLConnection http = null;
+                    try {
+                        http = (HttpURLConnection) new URL(data.toString()).openConnection();
+                        http.setConnectTimeout(TIMEOUT);
+                        http.setReadTimeout(TIMEOUT);
+                        String usernamePassword = data.getUserInfo();
+                        if (usernamePassword != null) {
+                            Header authorization = BasicScheme.authenticate(
+                                    new UsernamePasswordCredentials(usernamePassword), HTTP.UTF_8, false);
+                            http.setRequestProperty(authorization.getName(), authorization.getValue());
+                        }
+                        http.getInputStream().close();
+                    } catch (Throwable tr) {
+                        org.peterbaldwin.vlcremote.model.ErrorLog.log(
+                                "VLC background request failed: " + data.getPath(), tr);
+                    } finally {
+                        if (http != null) {
+                            http.disconnect();
+                        }
+                    }
+                }
+            }).start();
         }
 
         @SuppressWarnings("unchecked")
