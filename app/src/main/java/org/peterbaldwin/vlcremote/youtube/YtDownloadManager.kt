@@ -184,7 +184,7 @@ object YtDownloadManager {
                 ErrorLog.log("YouTube: failed to load next/previous video", e); null
             }
             withContext(Dispatchers.Main) {
-                if (v == null) { statusText = "Download failed"; return@withContext }
+                if (v == null) { statusText = "Download failed"; switching = false; return@withContext }
                 val q = v.qualities.firstOrNull { it.label == label }
                     ?: v.qualities.firstOrNull { it.label.startsWith("1080") }
                     ?: v.qualities.firstOrNull()
@@ -192,6 +192,7 @@ object YtDownloadManager {
                 if (q == null || audio == null) {
                     statusText = "No playable stream"
                     ErrorLog.log("YouTube: no playable stream for queue item")
+                    switching = false
                     return@withContext
                 }
                 val titleQ = if (q.label.isNotBlank()) "${v.title} [${q.label}]" else v.title
@@ -245,6 +246,7 @@ object YtDownloadManager {
         val cfg = HelperConfig.resolve(ctx, authority)
         if (cfg == null) {
             statusText = "Download helper disabled in settings"
+            switching = false
             return
         }
         host = cfg.host
@@ -260,6 +262,7 @@ object YtDownloadManager {
                 if (key == null) {
                     statusText = "Download unavailable (helper/ffmpeg?)"
                     ErrorLog.log("YouTube: helper did not start the download (helper/ffmpeg?)")
+                    switching = false
                     return@withContext
                 }
                 jobKey = key
@@ -424,6 +427,7 @@ object YtDownloadManager {
                             statusText = "Download failed"
                             ErrorLog.log("YouTube: helper reported download " + st.state + " for " + id)
                             jobKey = null
+                            switching = false  // download died before play(); don't wedge auto-advance
                             reschedule = false
                         } else {
                             // Empty state = helper unreachable. Tolerate transient blips, but stop
@@ -433,6 +437,7 @@ object YtDownloadManager {
                                 statusText = "Download failed (helper unreachable)"
                                 ErrorLog.log("YouTube: helper unreachable while polling $id")
                                 jobKey = null
+                                switching = false  // download died before play(); don't wedge auto-advance
                                 reschedule = false
                             }
                         }
