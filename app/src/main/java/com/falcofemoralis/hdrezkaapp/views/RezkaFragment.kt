@@ -118,6 +118,8 @@ class RezkaFragment : Fragment(), HdrezkaHost {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 cookieManager.flush()
+                // Origin has loaded (cf_clearance set): release any request waiting on warmup.
+                WebViewHttp.markReady()
             }
         }
         webView.loadUrl(provider)
